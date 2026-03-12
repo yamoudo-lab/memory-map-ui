@@ -47,25 +47,48 @@
                 document.getElementById('loading').style.display = 'none'; // ローディングの文字を消す
                 const listContainer = document.getElementById('memory-list');
 
-                // 1行目は見出し（日時, テキスト...）なので飛ばす。最新の記録を上にするため逆順（後ろから）ループする
+                // 1行目は見出しなので飛ばす。最新の記録を上にするため逆順ループ
                 for (let i = data.length - 1; i > 0; i--) {
                     const row = data[i];
-                    const date = row[0]; // A列：日時
-                    const text = row[1]; // B列：テキスト
-                    const imgUrl = row[2]; // C列：画像URL
-                    const mapUrl = row[3]; // D列：位置情報
+                    const date = row[0];        // A列：日時
+                    const typeOrText = row[1];  // B列：「画像」「位置情報」または「テキスト」
+                    const colC = row[2] || "";  // C列：ファイル名 or 住所 or 空白
+                    const colD = row[3] || "";  // D列：Drive URL or Map URL or 空白
+                    const colE = row[4] || "";  // E列：緯度経度（ある場合）
 
-                    // 空の行は無視する
-                    if (!date && !text && !imgUrl && !mapUrl) continue;
+                    if (!date) continue; // 空行は無視
+
+                    let textToShow = "";
+                    let mapBtnUrl = "";
+                    let imgBtnUrl = "";
+
+                    // 【超重要】データの種類（B列）によって、どこにURLがあるか賢く判断する
+                    if (typeOrText === "画像") {
+                        textToShow = "📷 写真を記録しました";
+                        if (colD.startsWith("http")) imgBtnUrl = colD; // 画像ならD列がURL
+                        
+                    } else if (typeOrText === "位置情報") {
+                        textToShow = "📍 " + colC; // 位置情報ならC列が住所
+                        // E列に座標があるなら、最強のGoogle Maps URLをここで自動生成！
+                        if (colE) {
+                            mapBtnUrl = `https://www.google.com/maps/search/?api=1&query=${colE}`;
+                        } else if (colD.startsWith("http")) {
+                            mapBtnUrl = colD;
+                        }
+                        
+                    } else {
+                        // 普通のテキストメッセージの場合
+                        textToShow = typeOrText;
+                    }
 
                     // HTMLのカードを組み立てる
                     let cardHtml = `<div class="memory-card">`;
                     if (date) cardHtml += `<div class="memory-date">🕒 ${new Date(date).toLocaleString('ja-JP')}</div>`;
-                    if (text) cardHtml += `<div class="memory-text">${text}</div>`;
+                    if (textToShow) cardHtml += `<div class="memory-text">${textToShow}</div>`;
                     
                     cardHtml += `<div class="btn-container">`;
-                    if (mapUrl) cardHtml += `<a href="${mapUrl}" target="_blank" class="btn btn-map">📍 地図を見る</a>`;
-                    if (imgUrl) cardHtml += `<a href="${imgUrl}" target="_blank" class="btn btn-img">🖼 画像を開く</a>`;
+                    if (mapBtnUrl) cardHtml += `<a href="${mapBtnUrl}" target="_blank" class="btn btn-map">📍 地図を見る</a>`;
+                    if (imgBtnUrl) cardHtml += `<a href="${imgBtnUrl}" target="_blank" class="btn btn-img">🖼 画像を開く</a>`;
                     cardHtml += `</div></div>`;
 
                     // 画面に追加
@@ -75,7 +98,7 @@
                 document.getElementById('loading').innerText = "通信エラーが発生しました: " + error;
             }
         }
-
+        
         async function main() {
             await liff.init({ liffId: "2009431992-aQfZHA0X" }); 
             if (!liff.isLoggedIn()) { liff.login(); } 
