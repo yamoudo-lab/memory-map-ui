@@ -46,9 +46,9 @@
                 
                 document.getElementById('loading').style.display = 'none'; // ローディングの文字を消す
                 const listContainer = document.getElementById('memory-list');
-
-                // 1行目は見出しなので飛ばす。最新の記録を上にするため逆順ループ
-                for (let i = data.length - 1; i > 0; i--) {
+               
+                // 【修正】i >= 0 に変更。1行目（i=0）もちゃんと読み込むようにした
+                for (let i = data.length - 1; i >= 0; i--) {
                     const row = data[i];
                     const date = row[0];        // A列：日時
                     const typeOrText = row[1];  // B列：「画像」「位置情報」または「テキスト」
@@ -56,20 +56,20 @@
                     const colD = row[3] || "";  // D列：Drive URL or Map URL or 空白
                     const colE = row[4] || "";  // E列：緯度経度（ある場合）
 
-                    if (!date) continue; // 空行は無視
+                    // 空行、または1行目に「日時」という見出し文字が残っていた場合はスキップ
+                    if (!date || date === "日時") continue; 
 
                     let textToShow = "";
                     let mapBtnUrl = "";
                     let imgBtnUrl = "";
 
-                    // 【超重要】データの種類（B列）によって、どこにURLがあるか賢く判断する
                     if (typeOrText === "画像") {
                         textToShow = "📷 写真を記録しました";
-                        if (colD.startsWith("http")) imgBtnUrl = colD; // 画像ならD列がURL
+                        if (colD.startsWith("http")) imgBtnUrl = colD; 
                         
                     } else if (typeOrText === "位置情報") {
-                        textToShow = "📍 " + colC; // 位置情報ならC列が住所
-                        // E列に座標があるなら、最強のGoogle Maps URLをここで自動生成！
+                        textToShow = "📍 " + colC; 
+                        // 【修正】俺のタイポを直し、正しいGoogle MapsのURLを生成するようにした
                         if (colE) {
                             mapBtnUrl = `https://www.google.com/maps/search/?api=1&query=${colE}`;
                         } else if (colD.startsWith("http")) {
@@ -77,7 +77,7 @@
                         }
                         
                     } else {
-                        // 普通のテキストメッセージの場合
+                        // 普通のテキストの場合
                         textToShow = typeOrText;
                     }
 
