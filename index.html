@@ -64,7 +64,9 @@
             <h2>✍️ 記憶を追加する</h2>
             
             <label style="font-size:0.9rem; font-weight:bold;">📷 写真</label>
-            <input type="file" id="photo-input" accept="image/*">
+            <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="previewImage(event)">
+            
+            <img id="photo-preview" src="" alt="プレビュー" style="display: none; width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px;">
             
             <div style="display: flex; align-items: center;">
                 <button class="action-btn btn-gps" onclick="getGps()">📍 現在地を取得</button>
@@ -93,6 +95,28 @@
 
         function closeModal() {
             document.getElementById('input-modal').style.display = 'none';
+            // 【追加】閉じた時にプレビュー画像や入力をリセットする
+            document.getElementById('photo-input').value = "";
+            document.getElementById('photo-preview').style.display = 'none';
+            document.getElementById('photo-preview').src = "";
+            document.getElementById('memo-input').value = "";
+            document.getElementById('gps-status').innerText = "未取得";
+            currentLat = null;
+            currentLng = null;
+        }
+
+        // 【進化3】撮った写真をブラウザ上で即座に表示（プレビュー）する魔法
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('photo-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block'; // プレビュー画像を表示！
+                }
+                reader.readAsDataURL(file);
+            }
         }
 
         // スマホのGPSセンサーを呼び出す魔法
