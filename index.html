@@ -25,22 +25,19 @@
         .btn-img { background-color: #E3F2FD; color: #1565C0; }
         #loading { text-align: center; color: #06C755; font-weight: bold; margin-top: 30px; }
 
-        /* 王道に戻した「＋」ボタン */
-        #fab { position: fixed; bottom: 20px; right: 20px; width: 65px; height: 65px; background-color: #06C755; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 35px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 1000;}
+        /* --- 進化：ダイレクト起動ボタン --- */
+        .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; align-items: flex-end;}
+        .fab-sub { width: 45px; height: 45px; background-color: white; color: #333; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; border: 1px solid #ddd;}
+        .fab-main { width: 65px; height: 65px; background-color: #06C755; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 35px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; }
         
         /* 入力モーダル */
         #input-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto;}
         .modal-content h2 { margin: 0 0 5px 0; font-size: 1.2rem; color: #333; text-align: center; }
         
-        /* 3つのメニューボタン */
-        .menu-btn-group { display: flex; gap: 8px; }
-        .menu-btn-group button { flex: 1; padding: 10px 5px; border: none; border-radius: 8px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;}
-        .btn-camera { background-color: #ff5a5a; color: white; }
-        .btn-gallery { background-color: #f1f1f1; color: #333; }
-        .btn-settings { background-color: #e0e0e0; color: #555; }
+        .btn-add-more { width: 100%; padding: 10px; background-color: #f1f1f1; border: 1px dashed #aaa; border-radius: 8px; font-weight: bold; color: #555; cursor: pointer; font-size: 0.9rem;}
         
-        /* 【進化】複数枚のプレビュー領域 */
+        /* 複数枚のプレビュー領域 */
         #preview-container { display: flex; flex-wrap: wrap; gap: 10px; min-height: 0px; }
         .preview-box { position: relative; width: calc(33.3% - 7px); aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; background: #fafafa;}
         .preview-box img { width: 100%; height: 100%; object-fit: cover; }
@@ -62,20 +59,18 @@
     <div id="loading">記憶を召喚中...</div>
     <div id="memory-list"></div>
 
-    <div id="fab" onclick="openModal()">＋</div>
+    <div class="fab-container">
+        <div class="fab-sub" onclick="openTextModal()">📝</div>
+        <div class="fab-main" onclick="document.getElementById('main-file-input').click()">＋</div>
+    </div>
+
+    <input type="file" id="main-file-input" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
 
     <div id="input-modal">
         <div class="modal-content">
             <h2>✍️ 記憶を追加する</h2>
             
-            <div class="menu-btn-group">
-                <button class="btn-camera" onclick="document.getElementById('camera-input').click()"><span>📷</span>カメラ</button>
-                <button class="btn-gallery" onclick="document.getElementById('gallery-input').click()"><span>📁</span>フォルダ</button>
-                <button class="btn-settings" onclick="alert('設定機能は将来のアップデートで追加予定です！')"><span>⚙️</span>設定</button>
-            </div>
-
-            <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleFiles(event)" style="display: none;">
-            <input type="file" id="gallery-input" accept="image/*" multiple onchange="handleFiles(event)" style="display: none;">
+            <button class="btn-add-more" onclick="document.getElementById('main-file-input').click()">📷 さらに写真を追加する</button>
             
             <div id="preview-container"></div>
             
@@ -85,7 +80,7 @@
             </div>
             <textarea id="memo-input" placeholder="ここにメモを入力..."></textarea>
             
-            <button class="action-btn btn-submit" onclick="testSubmit()">一括送信テスト</button>
+            <button class="action-btn btn-submit" onclick="testSubmit()">送信テスト</button>
             <button class="action-btn btn-cancel" onclick="closeModal()">キャンセル</button>
         </div>
     </div>
@@ -97,11 +92,32 @@
         let map; let bounds;
         let currentLat = null; let currentLng = null;
         let gpsEnabled = false;
-        
-        // 【進化】選ばれた全画像をストックする配列（待機所）
         let stagingFiles = [];
 
-        function openModal() {
+        // 【新機能】写真が選ばれた/撮られた瞬間に自動でモーダルを開く！
+        function handleDirectFiles(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+
+            stagingFiles = stagingFiles.concat(files);
+            renderPreviews();
+
+            // モーダルを自動で表示！
+            document.getElementById('input-modal').style.display = 'flex';
+            
+            // GPSの自動取得スタート
+            if (!gpsEnabled && currentLat === null) {
+                gpsEnabled = true;
+                document.getElementById('gps-toggle-btn').innerText = "外す";
+                getGps(); 
+            }
+            
+            // 次に同じファイルを選んでも反応するようにリセット
+            event.target.value = '';
+        }
+
+        // テキストのみで開きたい時用
+        function openTextModal() {
             document.getElementById('input-modal').style.display = 'flex';
             if (!gpsEnabled && currentLat === null) {
                 gpsEnabled = true;
@@ -112,59 +128,30 @@
 
         function closeModal() {
             document.getElementById('input-modal').style.display = 'none';
-            document.getElementById('camera-input').value = "";
-            document.getElementById('gallery-input').value = "";
+            document.getElementById('main-file-input').value = "";
             document.getElementById('memo-input').value = "";
             document.getElementById('gps-status').innerText = "未取得";
             currentLat = null; currentLng = null; gpsEnabled = false;
-            // 待機所の写真もすべてリセット
             stagingFiles = [];
             renderPreviews();
         }
 
-        // 【進化】写真が追加された時の処理（複数枚対応）
-        function handleFiles(event) {
-            const files = Array.from(event.target.files);
-            if (files.length === 0) return;
-
-            // 既存の配列に、新しく撮った/選んだ写真を追加する
-            stagingFiles = stagingFiles.concat(files);
-            renderPreviews();
-
-            // 同じファイルを連続で選べるようにinputをリセット
-            event.target.value = '';
-        }
-
-        // 【進化】待機所の写真を画面に並べる魔法
         function renderPreviews() {
             const container = document.getElementById('preview-container');
-            container.innerHTML = ''; // 一度空にする
-
+            container.innerHTML = ''; 
             stagingFiles.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    // 四角いサムネイルの箱を作る
-                    const box = document.createElement('div');
-                    box.className = 'preview-box';
-                    
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    
-                    // バツボタン（削除用）を作る
-                    const deleteBtn = document.createElement('div');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.innerText = '✕';
-                    deleteBtn.onclick = function() { removeFile(index); };
-
-                    box.appendChild(img);
-                    box.appendChild(deleteBtn);
-                    container.appendChild(box);
+                    const box = document.createElement('div'); box.className = 'preview-box';
+                    const img = document.createElement('img'); img.src = e.target.result;
+                    const deleteBtn = document.createElement('div'); deleteBtn.className = 'delete-btn';
+                    deleteBtn.innerText = '✕'; deleteBtn.onclick = function() { removeFile(index); };
+                    box.appendChild(img); box.appendChild(deleteBtn); container.appendChild(box);
                 }
                 reader.readAsDataURL(file);
             });
         }
 
-        // 特定の写真を待機所から消す処理
         function removeFile(index) {
             stagingFiles.splice(index, 1);
             renderPreviews();
