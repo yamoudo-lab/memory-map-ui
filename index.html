@@ -19,8 +19,6 @@
         #loading { text-align: center; color: #06C755; font-weight: bold; margin-top: 10px; }
 
         #memory-list { padding: 15px 20px 100px 20px; display: flex; flex-direction: column; gap: 15px; }
-        
-        /* カードにスムーススクロール用のIDをつけるため、上余白を調整 */
         .memory-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; scroll-margin-top: 380px;}
         
         .btn-delete { position: absolute; top: 15px; right: 15px; background-color: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: 0.2s;}
@@ -30,26 +28,21 @@
         .btn { display: inline-block; padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; text-decoration: none; font-weight: bold; cursor:pointer;}
         .btn-map { background-color: #E8F5E9; color: #2E7D32; border:none;}
         
-        /* サムネイルのホバー効果 */
         .thumb-img { height: 100px; min-width: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; cursor: pointer; transition: 0.2s; }
         .thumb-img:active { opacity: 0.7; }
 
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; align-items: flex-end;}
         .fab-main { width: 60px; height: 60px; background-color: #06C755; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 32px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; font-weight: bold;}
 
-        /* ▼▼▼ 極限進化：全画面ギャラリー（ライトボックス）のCSS ▼▼▼ */
+        /* ライトボックスのUI */
         #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; justify-content: center; align-items: center; }
         #lb-img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; }
-        
-        /* ギャラリー内の操作ボタン群 */
         .lb-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 36px; cursor: pointer; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding: 10px;}
         .lb-delete { position: absolute; top: 25px; left: 20px; background: white; color: #d32f2f; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border:none;}
-        
         .lb-nav { position: absolute; top: 50%; transform: translateY(-50%); color: white; font-size: 40px; cursor: pointer; user-select: none; padding: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .lb-prev { left: 0; }
         .lb-next { right: 0; }
         .lb-counter { position: absolute; bottom: 30px; color: white; font-size: 1rem; font-weight: bold; letter-spacing: 2px;}
-        /* ▲▲▲ 魔法陣ここまで ▲▲▲ */
 
         #input-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto;}
@@ -94,13 +87,11 @@
     <input type="file" id="add-more-trigger" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
 
     <div id="lightbox">
-        <div class="lb-close" onclick="closeLightbox()">&times;</div>
+        <div class="lb-close" onclick="closeLightbox()">×</div>
         <button class="lb-delete" onclick="deleteSingleImage()">🗑️ この写真を消去</button>
-        
-        <div class="lb-nav lb-prev" onclick="changeImage(-1)">&#10094;</div>
+        <div class="lb-nav lb-prev" onclick="changeImage(-1)">❮</div>
         <img id="lb-img" src="">
-        <div class="lb-nav lb-next" onclick="changeImage(1)">&#10095;</div>
-        
+        <div class="lb-nav lb-next" onclick="changeImage(1)">❯</div>
         <div id="lb-counter" class="lb-counter">1 / 1</div>
     </div>
 
@@ -123,13 +114,10 @@
         let currentLat = null; let currentLng = null;
         let stagingFiles = []; let modalMap = null; 
 
-        // ▼▼▼ ギャラリー管理用の変数（超重要） ▼▼▼
-        window.galleryData = {}; // 日付をキーにして画像の配列を保存する魔法の箱
-        let currentLbDate = "";  // 今開いているギャラリーの日付
-        let currentLbIndex = 0;  // 今見ているのが何枚目か
-        // ▲▲▲ ▲▲▲
+        window.galleryData = {}; 
+        let currentLbDate = "";  
+        let currentLbIndex = 0;  
 
-        // 画像圧縮エンジン
         function compressImage(file, maxWidth, maxHeight, quality) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader(); reader.readAsDataURL(file);
@@ -147,72 +135,64 @@
             });
         }
 
-        // ▼▼▼ ギャラリー操作システム ▼▼▼
         function openLightbox(dateStr, index) {
-            currentLbDate = dateStr;
-            currentLbIndex = index;
-            updateLightbox();
-            document.getElementById('lightbox').style.display = 'flex';
+            currentLbDate = dateStr; currentLbIndex = index;
+            updateLightbox(); document.getElementById('lightbox').style.display = 'flex';
         }
 
-        function closeLightbox() {
-            document.getElementById('lightbox').style.display = 'none';
-        }
+        function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 
         function changeImage(step) {
             const urls = window.galleryData[currentLbDate];
             currentLbIndex += step;
-            if (currentLbIndex < 0) currentLbIndex = urls.length - 1; // 戻りすぎたら最後に
-            if (currentLbIndex >= urls.length) currentLbIndex = 0;    // 行き過ぎたら最初に戻る
+            if (currentLbIndex < 0) currentLbIndex = urls.length - 1; 
+            if (currentLbIndex >= urls.length) currentLbIndex = 0;    
             updateLightbox();
         }
 
         function updateLightbox() {
             const urls = window.galleryData[currentLbDate];
-            // 高画質な元画像を表示する
-            document.getElementById('lb-img').src = urls[currentLbIndex];
+            let targetUrl = urls[currentLbIndex]; // 裏側のURL（Drive本来のリンク）
+            
+            // ▼▼▼ 進化：ライトボックス用に「高画質(w1000)の直接リンク」に変換して表示！ ▼▼▼
+            let displayUrl = targetUrl;
+            if (targetUrl.includes("drive.google.com/file/d/")) {
+                const match = targetUrl.match(/\/d\/(.+?)\//);
+                if (match && match[1]) {
+                    displayUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+                }
+            }
+            // ▲▲▲ ▲▲▲
+
+            // 変換したURLを画像タグに入れることで、絶対に破れなくなる！
+            document.getElementById('lb-img').src = displayUrl;
             document.getElementById('lb-counter').innerText = `${currentLbIndex + 1} / ${urls.length}`;
             
-            // 1枚しかない場合は左右の矢印を消す
             const navs = document.querySelectorAll('.lb-nav');
             navs.forEach(nav => nav.style.display = urls.length > 1 ? 'block' : 'none');
         }
 
-        // 「この写真1枚だけ」を消す最強の魔法
         async function deleteSingleImage() {
             if (!confirm("現在表示している『この写真1枚だけ』を削除しますか？\n（Driveからも消去されます）")) return;
-            
-            const targetUrl = window.galleryData[currentLbDate][currentLbIndex];
+            const targetUrl = window.galleryData[currentLbDate][currentLbIndex]; // GASには元のURLを送る
             closeLightbox();
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('loading').innerText = "✂️ 写真を1枚消去中...";
-            
+            document.getElementById('loading').style.display = 'block'; document.getElementById('loading').innerText = "✂️ 写真を1枚消去中...";
             try {
                 const payload = { action: "deleteImage", date: currentLbDate, imageUrl: targetUrl };
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 alert("✅ 写真を1枚削除しました。");
-                document.getElementById('memory-list').innerHTML = '';
-                document.getElementById('loading').innerText = "記憶を再召喚中...";
-                initMap(); 
-                fetchData(); 
+                document.getElementById('memory-list').innerHTML = ''; document.getElementById('loading').innerText = "記憶を再召喚中...";
+                initMap(); fetchData(); 
             } catch (error) { alert("❌ 削除エラー: " + error); document.getElementById('loading').style.display = 'none'; }
         }
-        // ▲▲▲ 魔法陣ここまで ▲▲▲
 
-        // ▼▼▼ リストへジャンプする魔法（スムーススクロール） ▼▼▼
         function jumpToCard(dateStr) {
             const card = document.getElementById('card-' + new Date(dateStr).getTime());
-            if (card) {
-                // 固定ヘッダーの分だけ下にズラして綺麗にスクロールする
-                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        // ▲▲▲ 魔法陣ここまで ▲▲▲
 
-        // その他の入力モーダル系処理（前回のまま）
         function initModalMap(lat, lng) {
-            document.getElementById('modal-map-container').style.display = 'block';
-            const pos = { lat: lat, lng: lng };
+            document.getElementById('modal-map-container').style.display = 'block'; const pos = { lat: lat, lng: lng };
             if (!modalMap) {
                 modalMap = new google.maps.Map(document.getElementById("modal-map"), { center: pos, zoom: 16, mapTypeControl: false, streetViewControl: false, fullscreenControl: false, gestureHandling: "greedy" });
                 modalMap.addListener('dragend', () => {
@@ -310,16 +290,13 @@
                 document.getElementById('loading').style.display = 'none'; 
                 const listContainer = document.getElementById('memory-list'); let hasPins = false; 
                 
-                // 毎回初期化する
                 window.galleryData = {}; 
 
-                // 1行目(見出し)を無視するため i > 0
                 for (let i = data.length - 1; i > 0; i--) { 
                     const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || ""; 
                     if (!date) continue; 
                     
-                    const timeId = new Date(date).getTime(); // アンカーリンク用のID作成
-                    
+                    const timeId = new Date(date).getTime(); 
                     let textToShow = ""; let mapBtnUrl = ""; 
                     let originalUrls = []; let directImgUrls = [];
                     
@@ -333,7 +310,6 @@
                         }
                     }
                     
-                    // グローバル変数にオリジナルURLを登録（ライトボックスで使う）
                     window.galleryData[date] = originalUrls;
 
                     if (typeOrText === "画像") { textToShow = "📷 写真を記録しました"; 
@@ -345,23 +321,22 @@
                                 const position = { lat: parseFloat(latLngArr[0]), lng: parseFloat(latLngArr[1]) }; 
                                 const marker = new google.maps.Marker({ position: position, map: map, title: colC }); 
                                 
-                                // ▼▼▼ マップ吹き出しの魔改造（ギャラリー連携） ▼▼▼
+                                // ▼▼▼ マップ吹き出しの進化（タップで開かないようにする） ▼▼▼
                                 let infoHtml = `<div style="width: 220px; font-family: sans-serif;">`;
                                 infoHtml += `<div style="font-size: 11px; color: #888; margin-bottom: 6px;">${new Date(date).toLocaleString('ja-JP')}</div>`;
                                 
                                 if (directImgUrls.length > 0) {
                                     infoHtml += `<div style="display: flex; overflow-x: auto; gap: 5px; margin-bottom: 8px; padding-bottom: 4px;">`;
                                     for(let j=0; j<directImgUrls.length; j++) {
-                                        // サムネイルをクリックすると全画面ギャラリーが開く！
-                                        infoHtml += `<img src="${directImgUrls[j]}" class="thumb-img" onclick="openLightbox('${date}', ${j})" style="height: 100px; min-width: 100px;">`;
+                                        // 修正：onclickを外し、クラスを外してタップ反応を消す！
+                                        infoHtml += `<img src="${directImgUrls[j]}" style="height: 100px; min-width: 100px; object-fit: cover; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
                                     }
                                     infoHtml += `</div>`;
                                 }
                                 
                                 infoHtml += `<div style="font-size: 13px; color: #333; font-weight: bold; line-height: 1.4;">${colC}</div>`;
-                                
-                                // ★ マップから下のリストへジャンプするボタン
-                                infoHtml += `<div style="text-align: right; margin-top: 5px;"><button onclick="jumpToCard('${date}')" class="btn" style="background:#E3F2FD; color:#1565C0; padding:4px 8px; font-size:11px; border:none;">⬇️ リストを見る</button></div>`;
+                                // マップからは「リストへ飛ぶ」だけ！
+                                infoHtml += `<div style="text-align: right; margin-top: 5px;"><button onclick="jumpToCard('${date}')" class="btn" style="background:#E3F2FD; color:#1565C0; padding:4px 8px; font-size:11px; border:none; cursor:pointer;">⬇️ リストを見る</button></div>`;
                                 infoHtml += `</div>`;
                                 // ▲▲▲ ▲▲▲
 
@@ -371,22 +346,18 @@
                         } else if (colD.startsWith("http")) { mapBtnUrl = colD; } 
                     } else { textToShow = typeOrText; } 
                     
-                    // ▼ スクロール用のID（card-時間）を付与
                     let cardHtml = `<div class="memory-card" id="card-${timeId}">`; 
                     cardHtml += `<button onclick="deleteMemory('${date}')" class="btn-delete">🗑️ まるごと削除</button>`;
                     if (date) cardHtml += `<div class="memory-date">🕒 ${new Date(date).toLocaleString('ja-JP')}</div>`; 
                     if (textToShow) cardHtml += `<div class="memory-text">${textToShow}</div>`; 
                     
-                    // ▼▼▼ リストのサムネイル（ギャラリー連携） ▼▼▼
                     if (directImgUrls.length > 0) {
                         cardHtml += `<div style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px;">`;
                         for(let j=0; j<directImgUrls.length; j++) {
-                            // クリックすると全画面ギャラリーが開く！
                             cardHtml += `<img src="${directImgUrls[j]}" class="thumb-img" onclick="openLightbox('${date}', ${j})" style="height: 100px; min-width: 100px;">`;
                         }
                         cardHtml += `</div>`;
                     }
-                    // ▲▲▲ ▲▲▲
 
                     cardHtml += `<div class="btn-container">`; 
                     if (mapBtnUrl) cardHtml += `<a href="${mapBtnUrl}" target="_blank" class="btn btn-map">📍 地図を開く</a>`; 
