@@ -10,10 +10,7 @@
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 0; }
         
-        #sticky-top {
-            position: sticky; top: 0; background-color: #f4f7f9; padding: 15px 20px 10px 20px; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        
+        #sticky-top { position: sticky; top: 0; background-color: #f4f7f9; padding: 15px 20px 10px 20px; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .header { text-align: center; margin-bottom: 10px; }
         h1 { color: #06C755; margin: 0; font-size: 1.8rem; }
         #welcome { font-size: 0.95rem; color: #888; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;}
@@ -22,22 +19,38 @@
         #loading { text-align: center; color: #06C755; font-weight: bold; margin-top: 10px; }
 
         #memory-list { padding: 15px 20px 100px 20px; display: flex; flex-direction: column; gap: 15px; }
-        .memory-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; }
+        
+        /* カードにスムーススクロール用のIDをつけるため、上余白を調整 */
+        .memory-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; scroll-margin-top: 380px;}
+        
         .btn-delete { position: absolute; top: 15px; right: 15px; background-color: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: 0.2s;}
-        .btn-delete:active { background-color: #ffcdd2; }
         .memory-date { font-size: 0.8rem; color: #888; margin-bottom: 10px; padding-right: 60px; }
         .memory-text { font-size: 1rem; line-height: 1.5; margin-bottom: 15px; white-space: pre-wrap; }
         .btn-container { display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn { display: inline-block; padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; text-decoration: none; font-weight: bold; }
-        .btn-map { background-color: #E8F5E9; color: #2E7D32; }
-        .btn-img { background-color: #E3F2FD; color: #1565C0; }
+        .btn { display: inline-block; padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; text-decoration: none; font-weight: bold; cursor:pointer;}
+        .btn-map { background-color: #E8F5E9; color: #2E7D32; border:none;}
+        
+        /* サムネイルのホバー効果 */
+        .thumb-img { height: 100px; min-width: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        .thumb-img:active { opacity: 0.7; }
 
-        /* ▼▼▼ 極限進化：FABを「＋」一つだけのシンプル＆最強仕様に戻す ▼▼▼ */
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; align-items: flex-end;}
         .fab-main { width: 60px; height: 60px; background-color: #06C755; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 32px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; font-weight: bold;}
-        .fab-main:active { transform: scale(0.95); }
-        /* ▲▲▲ 魔法陣ここまで ▲▲▲ */
+
+        /* ▼▼▼ 極限進化：全画面ギャラリー（ライトボックス）のCSS ▼▼▼ */
+        #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; justify-content: center; align-items: center; }
+        #lb-img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; }
         
+        /* ギャラリー内の操作ボタン群 */
+        .lb-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 36px; cursor: pointer; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding: 10px;}
+        .lb-delete { position: absolute; top: 25px; left: 20px; background: white; color: #d32f2f; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border:none;}
+        
+        .lb-nav { position: absolute; top: 50%; transform: translateY(-50%); color: white; font-size: 40px; cursor: pointer; user-select: none; padding: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .lb-prev { left: 0; }
+        .lb-next { right: 0; }
+        .lb-counter { position: absolute; bottom: 30px; color: white; font-size: 1rem; font-weight: bold; letter-spacing: 2px;}
+        /* ▲▲▲ 魔法陣ここまで ▲▲▲ */
+
         #input-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto;}
         
@@ -57,12 +70,9 @@
 
         .gps-container { display: flex; align-items: center; justify-content: center; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #eee;}
         #gps-status { font-size: 0.9rem; font-weight: bold; }
-        
         textarea { width: 100%; height: 80px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 1rem; box-sizing: border-box; resize: none; }
-        
         .action-btn { padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-submit { background-color: #06C755; color: white; }
-        .btn-submit:disabled { background-color: #a0e0b9; cursor: not-allowed; }
         .btn-cancel { background-color: white; color: #888; border: 1px solid #ddd;}
     </style>
 </head>
@@ -82,22 +92,24 @@
 
     <input type="file" id="main-trigger" accept="image/*" capture="environment" onchange="handleDirectFiles(event)" style="display: none;">
     <input type="file" id="add-more-trigger" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
+
+    <div id="lightbox">
+        <div class="lb-close" onclick="closeLightbox()">&times;</div>
+        <button class="lb-delete" onclick="deleteSingleImage()">🗑️ この写真を消去</button>
+        
+        <div class="lb-nav lb-prev" onclick="changeImage(-1)">&#10094;</div>
+        <img id="lb-img" src="">
+        <div class="lb-nav lb-next" onclick="changeImage(1)">&#10095;</div>
+        
+        <div id="lb-counter" class="lb-counter">1 / 1</div>
+    </div>
+
     <div id="input-modal">
         <div class="modal-content">
             <div id="preview-grid"></div>
-            
-            <div id="modal-map-container">
-                <div id="modal-map"></div>
-                <div class="center-pin">📍</div>
-                <button class="recenter-btn" onclick="getGps(true)">🎯</button>
-            </div>
-            
-            <div class="gps-container">
-                <span id="gps-status">⏳ 位置情報を準備中...</span>
-            </div>
-            
+            <div id="modal-map-container"><div id="modal-map"></div><div class="center-pin">📍</div><button class="recenter-btn" onclick="getGps(true)">🎯</button></div>
+            <div class="gps-container"><span id="gps-status">⏳ 位置情報を準備中...</span></div>
             <textarea id="memo-input" placeholder="ここにメモを入力..."></textarea>
-            
             <button class="action-btn btn-submit" onclick="submitData()">🚀 送信する</button>
             <button class="action-btn btn-cancel" onclick="closeModal()">キャンセル</button>
         </div>
@@ -109,13 +121,18 @@
         
         let map; let bounds;
         let currentLat = null; let currentLng = null;
-        let stagingFiles = [];
-        let modalMap = null; 
+        let stagingFiles = []; let modalMap = null; 
 
+        // ▼▼▼ ギャラリー管理用の変数（超重要） ▼▼▼
+        window.galleryData = {}; // 日付をキーにして画像の配列を保存する魔法の箱
+        let currentLbDate = "";  // 今開いているギャラリーの日付
+        let currentLbIndex = 0;  // 今見ているのが何枚目か
+        // ▲▲▲ ▲▲▲
+
+        // 画像圧縮エンジン
         function compressImage(file, maxWidth, maxHeight, quality) {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
+                const reader = new FileReader(); reader.readAsDataURL(file);
                 reader.onload = function(event) {
                     const img = new Image(); img.src = event.target.result;
                     img.onload = function() {
@@ -126,12 +143,73 @@
                         const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                         resolve(canvas.toDataURL('image/jpeg', quality));
                     };
-                    img.onerror = function(error) { reject(error); };
                 };
-                reader.onerror = function(error) { reject(error); };
             });
         }
 
+        // ▼▼▼ ギャラリー操作システム ▼▼▼
+        function openLightbox(dateStr, index) {
+            currentLbDate = dateStr;
+            currentLbIndex = index;
+            updateLightbox();
+            document.getElementById('lightbox').style.display = 'flex';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').style.display = 'none';
+        }
+
+        function changeImage(step) {
+            const urls = window.galleryData[currentLbDate];
+            currentLbIndex += step;
+            if (currentLbIndex < 0) currentLbIndex = urls.length - 1; // 戻りすぎたら最後に
+            if (currentLbIndex >= urls.length) currentLbIndex = 0;    // 行き過ぎたら最初に戻る
+            updateLightbox();
+        }
+
+        function updateLightbox() {
+            const urls = window.galleryData[currentLbDate];
+            // 高画質な元画像を表示する
+            document.getElementById('lb-img').src = urls[currentLbIndex];
+            document.getElementById('lb-counter').innerText = `${currentLbIndex + 1} / ${urls.length}`;
+            
+            // 1枚しかない場合は左右の矢印を消す
+            const navs = document.querySelectorAll('.lb-nav');
+            navs.forEach(nav => nav.style.display = urls.length > 1 ? 'block' : 'none');
+        }
+
+        // 「この写真1枚だけ」を消す最強の魔法
+        async function deleteSingleImage() {
+            if (!confirm("現在表示している『この写真1枚だけ』を削除しますか？\n（Driveからも消去されます）")) return;
+            
+            const targetUrl = window.galleryData[currentLbDate][currentLbIndex];
+            closeLightbox();
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerText = "✂️ 写真を1枚消去中...";
+            
+            try {
+                const payload = { action: "deleteImage", date: currentLbDate, imageUrl: targetUrl };
+                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                alert("✅ 写真を1枚削除しました。");
+                document.getElementById('memory-list').innerHTML = '';
+                document.getElementById('loading').innerText = "記憶を再召喚中...";
+                initMap(); 
+                fetchData(); 
+            } catch (error) { alert("❌ 削除エラー: " + error); document.getElementById('loading').style.display = 'none'; }
+        }
+        // ▲▲▲ 魔法陣ここまで ▲▲▲
+
+        // ▼▼▼ リストへジャンプする魔法（スムーススクロール） ▼▼▼
+        function jumpToCard(dateStr) {
+            const card = document.getElementById('card-' + new Date(dateStr).getTime());
+            if (card) {
+                // 固定ヘッダーの分だけ下にズラして綺麗にスクロールする
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        // ▲▲▲ 魔法陣ここまで ▲▲▲
+
+        // その他の入力モーダル系処理（前回のまま）
         function initModalMap(lat, lng) {
             document.getElementById('modal-map-container').style.display = 'block';
             const pos = { lat: lat, lng: lng };
@@ -139,15 +217,13 @@
                 modalMap = new google.maps.Map(document.getElementById("modal-map"), { center: pos, zoom: 16, mapTypeControl: false, streetViewControl: false, fullscreenControl: false, gestureHandling: "greedy" });
                 modalMap.addListener('dragend', () => {
                     const center = modalMap.getCenter(); currentLat = center.lat(); currentLng = center.lng();
-                    const statusText = document.getElementById('gps-status');
-                    statusText.innerText = "✍️ 手動で場所を設定中"; statusText.style.color = "#FF9800";
+                    const statusText = document.getElementById('gps-status'); statusText.innerText = "✍️ 手動で場所を設定中"; statusText.style.color = "#FF9800";
                 });
             } else { modalMap.setCenter(pos); }
         }
 
         function getGps(isRecenter = false) {
-            const statusText = document.getElementById('gps-status');
-            statusText.innerText = "⏳ 現在地を取得中..."; statusText.style.color = "blue";
+            const statusText = document.getElementById('gps-status'); statusText.innerText = "⏳ 現在地を取得中..."; statusText.style.color = "blue";
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
@@ -157,56 +233,40 @@
                     },
                     function(error) {
                         statusText.innerText = "❌ 取得失敗。地図を動かして場所を決めてください。"; statusText.style.color = "red";
-                        if (!currentLat) currentLat = 35.681236; if (!currentLng) currentLng = 139.767125;
-                        initModalMap(currentLat, currentLng);
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                        if (!currentLat) currentLat = 35.681236; if (!currentLng) currentLng = 139.767125; initModalMap(currentLat, currentLng);
+                    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             }
         }
 
         function handleDirectFiles(event) {
-            const files = Array.from(event.target.files);
-            if (files.length === 0) return;
+            const files = Array.from(event.target.files); if (files.length === 0) return;
             if (stagingFiles.length + files.length > 5) {
-                alert("⚠️ 一度に送信できる写真は最大5枚までです。\n超過分は自動的に除外されます。");
-                const allowedCount = 5 - stagingFiles.length;
-                stagingFiles = stagingFiles.concat(files.slice(0, allowedCount));
-            } else {
-                stagingFiles = stagingFiles.concat(files);
-            }
-            renderPreviews();
-            document.getElementById('input-modal').style.display = 'flex';
-            getGps(); 
-            event.target.value = ''; 
+                alert("⚠️ 最大5枚までです。超過分は除外されます。");
+                stagingFiles = stagingFiles.concat(files.slice(0, 5 - stagingFiles.length));
+            } else { stagingFiles = stagingFiles.concat(files); }
+            renderPreviews(); document.getElementById('input-modal').style.display = 'flex'; getGps(); event.target.value = ''; 
         }
 
         function closeModal() {
             document.getElementById('input-modal').style.display = 'none';
             document.getElementById('main-trigger').value = ""; document.getElementById('add-more-trigger').value = ""; document.getElementById('memo-input').value = "";
-            document.getElementById('gps-status').innerText = "⏳ 位置情報を準備中...";
-            document.getElementById('modal-map-container').style.display = 'none';
+            document.getElementById('gps-status').innerText = "⏳ 位置情報を準備中..."; document.getElementById('modal-map-container').style.display = 'none';
             currentLat = null; currentLng = null; stagingFiles = []; renderPreviews();
         }
 
         function renderPreviews() {
-            const grid = document.getElementById('preview-grid');
-            grid.innerHTML = ''; 
+            const grid = document.getElementById('preview-grid'); grid.innerHTML = ''; 
             stagingFiles.forEach((file, index) => {
                 const box = document.createElement('div'); box.className = 'preview-box';
-                const img = document.createElement('img');
-                const reader = new FileReader();
-                reader.onload = function(e) { img.src = e.target.result; }
-                reader.readAsDataURL(file);
-                const deleteBtn = document.createElement('div'); deleteBtn.className = 'delete-btn';
-                deleteBtn.innerText = '✕'; deleteBtn.onclick = function() { removeFile(index); };
+                const img = document.createElement('img'); const reader = new FileReader();
+                reader.onload = function(e) { img.src = e.target.result; }; reader.readAsDataURL(file);
+                const deleteBtn = document.createElement('div'); deleteBtn.className = 'delete-btn'; deleteBtn.innerText = '✕'; deleteBtn.onclick = function() { removeFile(index); };
                 box.appendChild(img); box.appendChild(deleteBtn); grid.appendChild(box);
             });
             if (stagingFiles.length < 5) {
                 const addBox = document.createElement('div'); addBox.className = 'add-more-box';
-                addBox.onclick = function() { document.getElementById('add-more-trigger').click(); };
-                addBox.innerHTML = `<span>＋</span><p>追加</p>`;
-                grid.appendChild(addBox);
+                addBox.onclick = function() { document.getElementById('add-more-trigger').click(); }; addBox.innerHTML = `<span>＋</span><p>追加</p>`; grid.appendChild(addBox);
             }
         }
 
@@ -214,139 +274,122 @@
 
         async function submitData() {
             if (modalMap) { currentLat = modalMap.getCenter().lat(); currentLng = modalMap.getCenter().lng(); }
-            if (!currentLat || !currentLng) { alert("⚠️ 場所が決定されていません。少し待つか、地図を動かしてください。"); return; }
-            const btn = document.querySelector('.btn-submit');
-            btn.innerText = "🗜️ 圧縮中..."; btn.disabled = true;
+            if (!currentLat || !currentLng) { alert("⚠️ 場所が決定されていません。"); return; }
+            const btn = document.querySelector('.btn-submit'); btn.innerText = "🗜️ 圧縮中..."; btn.disabled = true;
             try {
-                const memoText = document.getElementById('memo-input').value;
-                const gpsText = `${currentLat},${currentLng}`;
+                const memoText = document.getElementById('memo-input').value; const gpsText = `${currentLat},${currentLng}`;
                 let base64Images = [];
                 for (let i = 0; i < stagingFiles.length; i++) {
-                    let file = stagingFiles[i];
-                    let compressedBase64 = await compressImage(file, 1200, 1200, 0.7);
+                    let compressedBase64 = await compressImage(stagingFiles[i], 1200, 1200, 0.7);
                     base64Images.push({ filename: `liff_${Date.now()}_${i}.jpg`, base64: compressedBase64 });
                 }
                 const payload = { source: "liff", memo: memoText, gps: gpsText, images: base64Images };
-                btn.innerText = "📡 データベースへ送信中...";
+                btn.innerText = "📡 送信中...";
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-                alert("✅ 記憶の保存に成功しました！");
-                closeModal();
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('memory-list').innerHTML = '';
-                initMap();
-                fetchData(); 
-            } catch (error) { alert("❌ 通信エラーが発生しました: " + error); } finally { btn.innerText = "🚀 送信する"; btn.disabled = false; }
+                alert("✅ 保存に成功しました！"); closeModal();
+                document.getElementById('loading').style.display = 'block'; document.getElementById('memory-list').innerHTML = ''; initMap(); fetchData(); 
+            } catch (error) { alert("❌ エラー: " + error); } finally { btn.innerText = "🚀 送信する"; btn.disabled = false; }
         }
 
         async function deleteMemory(dateStr) {
-            if (!confirm("本当にこの記憶を削除しますか？\n（※写真もドライブから消去され、元に戻せません）")) return;
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('loading').innerText = "🗑️ 記憶を消去中...";
+            if (!confirm("この投稿（記憶）をまるごと全て削除しますか？\n（※元に戻せません）")) return;
+            document.getElementById('loading').style.display = 'block'; document.getElementById('loading').innerText = "🗑️ 記憶を消去中...";
             try {
                 const payload = { action: "delete", date: dateStr };
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 alert("✅ 記憶を完全に消去しました。");
-                document.getElementById('memory-list').innerHTML = '';
-                document.getElementById('loading').innerText = "記憶を再召喚中...";
-                initMap(); 
-                fetchData(); 
-            } catch (error) { alert("❌ 削除エラー: " + error); document.getElementById('loading').style.display = 'none'; }
+                document.getElementById('memory-list').innerHTML = ''; document.getElementById('loading').innerText = "記憶を再召喚中..."; initMap(); fetchData(); 
+            } catch (error) { alert("❌ エラー: " + error); document.getElementById('loading').style.display = 'none'; }
         }
 
         function initMap() { map = new google.maps.Map(document.getElementById("map"), { center: { lat: 35.6895, lng: 139.6917 }, zoom: 5, mapTypeControl: false, streetViewControl: false }); bounds = new google.maps.LatLngBounds(); }
         
         async function fetchData() { 
             try { 
-                const response = await fetch(GAS_URL); 
-                const data = await response.json(); 
+                const response = await fetch(GAS_URL); const data = await response.json(); 
                 document.getElementById('loading').style.display = 'none'; 
-                const listContainer = document.getElementById('memory-list'); 
-                let hasPins = false; 
+                const listContainer = document.getElementById('memory-list'); let hasPins = false; 
                 
-                // ★修正：i > 0 にすることで、1行目(見出し)のデータを完全に無視する！
+                // 毎回初期化する
+                window.galleryData = {}; 
+
+                // 1行目(見出し)を無視するため i > 0
                 for (let i = data.length - 1; i > 0; i--) { 
-                    const row = data[i]; 
-                    const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || ""; 
+                    const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || ""; 
                     if (!date) continue; 
                     
-                    let textToShow = ""; let mapBtnUrl = ""; 
+                    const timeId = new Date(date).getTime(); // アンカーリンク用のID作成
                     
-                    // ▼▼▼ 進化：複数の画像URLをすべて処理する魔法 ▼▼▼
-                    let originalUrls = [];
-                    let directImgUrls = [];
+                    let textToShow = ""; let mapBtnUrl = ""; 
+                    let originalUrls = []; let directImgUrls = [];
+                    
                     if (colD && colD.startsWith("http")) { 
-                        originalUrls = colD.split(","); // カンマで分割して全部取得
+                        originalUrls = colD.split(","); 
                         for (let u of originalUrls) {
                             if (u.includes("drive.google.com/file/d/")) {
                                 const match = u.match(/\/d\/(.+?)\//);
-                                if (match && match[1]) {
-                                    directImgUrls.push(`https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`);
-                                }
+                                if (match && match[1]) directImgUrls.push(`https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`);
                             }
                         }
                     }
-                    // ▲▲▲ ▲▲▲
+                    
+                    // グローバル変数にオリジナルURLを登録（ライトボックスで使う）
+                    window.galleryData[date] = originalUrls;
 
-                    if (typeOrText === "画像") { 
-                        textToShow = "📷 写真を記録しました"; 
-                    } else if (typeOrText === "位置情報") { 
-                        textToShow = "📍 " + colC; 
+                    if (typeOrText === "画像") { textToShow = "📷 写真を記録しました"; 
+                    } else if (typeOrText === "位置情報") { textToShow = "📍 " + colC; 
                         if (colE) { 
-                            // マップを開くURLも一番安定するGoogle公式形式に修正！
                             mapBtnUrl = `https://www.google.com/maps/search/?api=1&query=${colE}`; 
-                            
                             const latLngArr = String(colE).split(","); 
                             if(latLngArr.length === 2 && map) { 
                                 const position = { lat: parseFloat(latLngArr[0]), lng: parseFloat(latLngArr[1]) }; 
                                 const marker = new google.maps.Marker({ position: position, map: map, title: colC }); 
                                 
-                                // ▼▼▼ マップ吹き出しの「ギャラリー化」 ▼▼▼
+                                // ▼▼▼ マップ吹き出しの魔改造（ギャラリー連携） ▼▼▼
                                 let infoHtml = `<div style="width: 220px; font-family: sans-serif;">`;
                                 infoHtml += `<div style="font-size: 11px; color: #888; margin-bottom: 6px;">${new Date(date).toLocaleString('ja-JP')}</div>`;
                                 
-                                // 写真が1枚でも複数でも、横スクロールできる箱に入れる！
                                 if (directImgUrls.length > 0) {
                                     infoHtml += `<div style="display: flex; overflow-x: auto; gap: 5px; margin-bottom: 8px; padding-bottom: 4px;">`;
-                                    for(let u of directImgUrls) {
-                                        infoHtml += `<img src="${u}" style="height: 100px; min-width: 100px; object-fit: cover; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
+                                    for(let j=0; j<directImgUrls.length; j++) {
+                                        // サムネイルをクリックすると全画面ギャラリーが開く！
+                                        infoHtml += `<img src="${directImgUrls[j]}" class="thumb-img" onclick="openLightbox('${date}', ${j})" style="height: 100px; min-width: 100px;">`;
                                     }
                                     infoHtml += `</div>`;
                                 }
                                 
-                                infoHtml += `<div style="font-size: 13px; color: #333; font-weight: bold; line-height: 1.4;">${colC}</div></div>`;
+                                infoHtml += `<div style="font-size: 13px; color: #333; font-weight: bold; line-height: 1.4;">${colC}</div>`;
+                                
+                                // ★ マップから下のリストへジャンプするボタン
+                                infoHtml += `<div style="text-align: right; margin-top: 5px;"><button onclick="jumpToCard('${date}')" class="btn" style="background:#E3F2FD; color:#1565C0; padding:4px 8px; font-size:11px; border:none;">⬇️ リストを見る</button></div>`;
+                                infoHtml += `</div>`;
                                 // ▲▲▲ ▲▲▲
 
                                 const infoWindow = new google.maps.InfoWindow({ content: infoHtml }); 
-                                marker.addListener("click", () => { infoWindow.open(map, marker); }); 
-                                bounds.extend(position); hasPins = true; 
+                                marker.addListener("click", () => { infoWindow.open(map, marker); }); bounds.extend(position); hasPins = true; 
                             } 
                         } else if (colD.startsWith("http")) { mapBtnUrl = colD; } 
-                    } else { 
-                        textToShow = typeOrText; 
-                    } 
+                    } else { textToShow = typeOrText; } 
                     
-                    let cardHtml = `<div class="memory-card">`; 
-                    cardHtml += `<button onclick="deleteMemory('${date}')" class="btn-delete">🗑️ 削除</button>`;
+                    // ▼ スクロール用のID（card-時間）を付与
+                    let cardHtml = `<div class="memory-card" id="card-${timeId}">`; 
+                    cardHtml += `<button onclick="deleteMemory('${date}')" class="btn-delete">🗑️ まるごと削除</button>`;
                     if (date) cardHtml += `<div class="memory-date">🕒 ${new Date(date).toLocaleString('ja-JP')}</div>`; 
                     if (textToShow) cardHtml += `<div class="memory-text">${textToShow}</div>`; 
                     
-                    // ▼▼▼ 履歴カード自体の「ギャラリー化」 ▼▼▼
-                    // わざわざ「画像を開く」ボタンを押さなくても、カードの中で写真が見れるようにしたぞ！
+                    // ▼▼▼ リストのサムネイル（ギャラリー連携） ▼▼▼
                     if (directImgUrls.length > 0) {
                         cardHtml += `<div style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px;">`;
                         for(let j=0; j<directImgUrls.length; j++) {
-                            // タップしたらDriveで元画像が大きく開く
-                            cardHtml += `<a href="${originalUrls[j]}" target="_blank" style="flex-shrink: 0;">
-                                            <img src="${directImgUrls[j]}" style="height: 100px; width: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
-                                         </a>`;
+                            // クリックすると全画面ギャラリーが開く！
+                            cardHtml += `<img src="${directImgUrls[j]}" class="thumb-img" onclick="openLightbox('${date}', ${j})" style="height: 100px; min-width: 100px;">`;
                         }
                         cardHtml += `</div>`;
                     }
                     // ▲▲▲ ▲▲▲
 
                     cardHtml += `<div class="btn-container">`; 
-                    if (mapBtnUrl) cardHtml += `<a href="${mapBtnUrl}" target="_blank" class="btn btn-map">📍 地図を見る</a>`; 
-                    // ※写真は上で見れるようになったので、「🖼画像を開く」ボタンは廃止した！
+                    if (mapBtnUrl) cardHtml += `<a href="${mapBtnUrl}" target="_blank" class="btn btn-map">📍 地図を開く</a>`; 
                     cardHtml += `</div></div>`; 
                     
                     listContainer.innerHTML += cardHtml; 
@@ -354,21 +397,17 @@
                 if (hasPins && map) { document.getElementById("map").style.display = "block"; map.fitBounds(bounds); } 
             } catch (error) { document.getElementById('loading').innerText = "通信エラーが発生しました: " + error; } 
         }
+
         async function main() { 
             try { 
                 if (typeof google !== 'undefined' && typeof google.maps !== 'undefined') { initMap(); } 
                 await liff.init({ liffId: "2009431992-aQfZHA0X" }); 
-                if (!liff.isLoggedIn()) { 
-                    liff.login(); 
-                } else { 
+                if (!liff.isLoggedIn()) { liff.login(); } else { 
                     const profile = await liff.getProfile(); 
                     document.getElementById('welcome').innerText = profile.displayName + "'s Memory Archive"; 
                     fetchData(); 
                 } 
-            } catch (e) { 
-                document.getElementById('welcome').innerHTML = "<span style='color:red; font-weight:bold;'>エラー発生: " + e.message + "</span>"; 
-                document.getElementById('loading').style.display = 'none'; 
-            } 
+            } catch (e) { document.getElementById('welcome').innerHTML = "<span style='color:red; font-weight:bold;'>エラー発生: " + e.message + "</span>"; document.getElementById('loading').style.display = 'none'; } 
         }
         main();
     </script>
