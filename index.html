@@ -9,25 +9,45 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNtKd51uBJx4cYXoteOq72GZmq7Re4Qf0"></script>
     
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        h1 { color: #06C755; margin: 0; font-size: 1.8rem; }
-        #welcome { font-size: 1rem; color: #666; margin-top: 5px; }
+        /* ▼▼▼ 進化：ページ全体の余白をゼロにし、スクロール制御の土台を作る ▼▼▼ */
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 0; }
         
-        #map { height: 350px; width: 100%; border-radius: 12px; margin-bottom: 20px; display: none; border: 2px solid #06C755;}
-        #memory-list { display: flex; flex-direction: column; gap: 15px; padding-bottom: 100px; }
-        .memory-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .memory-date { font-size: 0.8rem; color: #888; margin-bottom: 10px; }
+        /* ▼▼▼ 極限進化：地図とヘッダーを画面上部にガッチリ固定する魔法 ▼▼▼ */
+        #sticky-top {
+            position: sticky;
+            top: 0;
+            background-color: #f4f7f9;
+            padding: 15px 20px 10px 20px;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); /* スクロール時に浮いているように見せる影 */
+        }
+        
+        .header { text-align: center; margin-bottom: 10px; }
+        h1 { color: #06C755; margin: 0; font-size: 1.8rem; }
+        #welcome { font-size: 0.9rem; color: #666; margin-top: 5px; }
+        
+        /* 固定時は少し高さを抑えるのがアプリの鉄則 */
+        #map { height: 280px; width: 100%; border-radius: 12px; border: 2px solid #06C755; display: none; box-sizing: border-box;}
+        #loading { text-align: center; color: #06C755; font-weight: bold; margin-top: 10px; }
+
+        /* リスト部分は自由にスクロールできる */
+        #memory-list { padding: 15px 20px 100px 20px; display: flex; flex-direction: column; gap: 15px; }
+        
+        /* ▼▼▼ 進化：削除ボタンを右上に配置するための相対位置 ▼▼▼ */
+        .memory-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; }
+        
+        /* 削除ボタン（右上固定） */
+        .btn-delete { position: absolute; top: 15px; right: 15px; background-color: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .btn-delete:active { background-color: #ffcdd2; }
+        
+        /* 削除ボタンと重ならないように右に余白を開ける */
+        .memory-date { font-size: 0.8rem; color: #888; margin-bottom: 10px; padding-right: 60px; }
+        
         .memory-text { font-size: 1rem; line-height: 1.5; margin-bottom: 15px; white-space: pre-wrap; }
         .btn-container { display: flex; gap: 10px; flex-wrap: wrap; }
         .btn { display: inline-block; padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; text-decoration: none; font-weight: bold; }
         .btn-map { background-color: #E8F5E9; color: #2E7D32; }
         .btn-img { background-color: #E3F2FD; color: #1565C0; }
-        
-        /* ▼▼▼ 追加：削除ボタンのデザイン ▼▼▼ */
-        .btn-delete { background-color: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; margin-left: auto;}
-        
-        #loading { text-align: center; color: #06C755; font-weight: bold; margin-top: 30px; }
 
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; align-items: flex-end;}
         .fab-sub { width: 45px; height: 45px; background-color: white; color: #333; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; border: 1px solid #ddd;}
@@ -62,9 +82,13 @@
     </style>
 </head>
 <body>
-    <div class="header"><h1>Memory Map</h1><div id="welcome">読み込み中...</div></div>
-    <div id="map"></div>
-    <div id="loading">記憶を召喚中...</div>
+    
+    <div id="sticky-top">
+        <div class="header"><h1>Memory Map</h1><div id="welcome">読み込み中...</div></div>
+        <div id="map"></div>
+        <div id="loading">記憶を召喚中...</div>
+    </div>
+
     <div id="memory-list"></div>
 
     <div class="fab-container">
@@ -166,160 +190,4 @@
                 const allowedCount = 5 - stagingFiles.length;
                 stagingFiles = stagingFiles.concat(files.slice(0, allowedCount));
             } else {
-                stagingFiles = stagingFiles.concat(files);
-            }
-            renderPreviews();
-            document.getElementById('input-modal').style.display = 'flex';
-            getGps(); 
-            event.target.value = ''; 
-        }
-
-        function openTextModal() { document.getElementById('input-modal').style.display = 'flex'; getGps(); }
-
-        function closeModal() {
-            document.getElementById('input-modal').style.display = 'none';
-            document.getElementById('main-trigger').value = ""; document.getElementById('add-more-trigger').value = ""; document.getElementById('memo-input').value = "";
-            document.getElementById('gps-status').innerText = "⏳ 位置情報を準備中...";
-            document.getElementById('modal-map-container').style.display = 'none';
-            currentLat = null; currentLng = null; stagingFiles = []; renderPreviews();
-        }
-
-        function renderPreviews() {
-            const grid = document.getElementById('preview-grid');
-            grid.innerHTML = ''; 
-            stagingFiles.forEach((file, index) => {
-                const box = document.createElement('div'); box.className = 'preview-box';
-                const img = document.createElement('img');
-                const reader = new FileReader();
-                reader.onload = function(e) { img.src = e.target.result; }
-                reader.readAsDataURL(file);
-                const deleteBtn = document.createElement('div'); deleteBtn.className = 'delete-btn';
-                deleteBtn.innerText = '✕'; deleteBtn.onclick = function() { removeFile(index); };
-                box.appendChild(img); box.appendChild(deleteBtn); grid.appendChild(box);
-            });
-            if (stagingFiles.length < 5) {
-                const addBox = document.createElement('div'); addBox.className = 'add-more-box';
-                addBox.onclick = function() { document.getElementById('add-more-trigger').click(); };
-                addBox.innerHTML = `<span>＋</span><p>追加</p>`;
-                grid.appendChild(addBox);
-            }
-        }
-
-        function removeFile(index) { stagingFiles.splice(index, 1); renderPreviews(); }
-
-        async function submitData() {
-            if (modalMap) { currentLat = modalMap.getCenter().lat(); currentLng = modalMap.getCenter().lng(); }
-            if (!currentLat || !currentLng) { alert("⚠️ 場所が決定されていません。少し待つか、地図を動かしてください。"); return; }
-            const btn = document.querySelector('.btn-submit');
-            btn.innerText = "🗜️ 圧縮中..."; btn.disabled = true;
-            try {
-                const memoText = document.getElementById('memo-input').value;
-                const gpsText = `${currentLat},${currentLng}`;
-                let base64Images = [];
-                for (let i = 0; i < stagingFiles.length; i++) {
-                    let file = stagingFiles[i];
-                    let compressedBase64 = await compressImage(file, 1200, 1200, 0.7);
-                    base64Images.push({ filename: `liff_${Date.now()}_${i}.jpg`, base64: compressedBase64 });
-                }
-                const payload = { source: "liff", memo: memoText, gps: gpsText, images: base64Images };
-                btn.innerText = "📡 データベースへ送信中...";
-                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-                alert("✅ 記憶の保存に成功しました！");
-                closeModal();
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('memory-list').innerHTML = '';
-                // 送信後にマップもリセットするため initMap を呼ぶ
-                initMap();
-                fetchData(); 
-            } catch (error) { alert("❌ 通信エラーが発生しました: " + error); } finally { btn.innerText = "🚀 送信する"; btn.disabled = false; }
-        }
-
-        // ▼▼▼ 【極限進化】削除用の魔法陣 ▼▼▼
-        async function deleteMemory(dateStr) {
-            // 確認アラートを出す（誤操作防止）
-            if (!confirm("本当にこの記憶を削除しますか？\n（※写真もドライブから消去され、元に戻せません）")) return;
-
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('loading').innerText = "🗑️ 記憶を消去中...";
-            
-            try {
-                // GASに「削除しろ」という命令と「いつのデータか」を送る
-                const payload = { action: "delete", date: dateStr };
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify(payload)
-                });
-
-                alert("✅ 記憶を完全に消去しました。");
-                
-                // リストと地図を初期化して再読み込み！
-                document.getElementById('memory-list').innerHTML = '';
-                document.getElementById('loading').innerText = "記憶を再召喚中...";
-                initMap(); 
-                fetchData(); 
-            } catch (error) {
-                alert("❌ 削除エラー: " + error);
-                document.getElementById('loading').style.display = 'none';
-            }
-        }
-        // ▲▲▲ 魔法陣ここまで ▲▲▲
-
-        function initMap() { map = new google.maps.Map(document.getElementById("map"), { center: { lat: 35.6895, lng: 139.6917 }, zoom: 5, mapTypeControl: false, streetViewControl: false }); bounds = new google.maps.LatLngBounds(); }
-        
-        async function fetchData() { 
-            try { 
-                const response = await fetch(GAS_URL); const data = await response.json(); 
-                document.getElementById('loading').style.display = 'none'; 
-                const listContainer = document.getElementById('memory-list'); let hasPins = false; 
-                for (let i = data.length - 1; i >= 0; i--) { 
-                    const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || ""; 
-                    if (!date || date === "日時") continue; 
-                    let textToShow = ""; let mapBtnUrl = ""; let imgBtnUrl = ""; let directImgUrl = "";
-                    if (colD && colD.startsWith("http")) { 
-                        imgBtnUrl = colD.split(",")[0]; directImgUrl = imgBtnUrl; 
-                        if (imgBtnUrl.includes("drive.google.com/file/d/")) {
-                            const match = imgBtnUrl.match(/\/d\/(.+?)\//);
-                            if (match && match[1]) directImgUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`;
-                        }
-                    }
-                    if (typeOrText === "画像") { textToShow = "📷 写真を記録しました"; 
-                    } else if (typeOrText === "位置情報") { textToShow = "📍 " + colC; 
-                        if (colE) { 
-                            mapBtnUrl = `https://maps.google.com/maps?q=${colE}`; 
-                            const latLngArr = String(colE).split(","); 
-                            if(latLngArr.length === 2 && map) { 
-                                const position = { lat: parseFloat(latLngArr[0]), lng: parseFloat(latLngArr[1]) }; 
-                                const marker = new google.maps.Marker({ position: position, map: map, title: colC }); 
-                                let infoHtml = `<div style="width: 160px; font-family: sans-serif;">`;
-                                infoHtml += `<div style="font-size: 11px; color: #888; margin-bottom: 6px;">${new Date(date).toLocaleString('ja-JP')}</div>`;
-                                if (directImgUrl) infoHtml += `<img src="${directImgUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
-                                infoHtml += `<div style="font-size: 13px; color: #333; font-weight: bold; line-height: 1.4;">${colC}</div></div>`;
-                                const infoWindow = new google.maps.InfoWindow({ content: infoHtml }); 
-                                marker.addListener("click", () => { infoWindow.open(map, marker); }); bounds.extend(position); hasPins = true; 
-                            } 
-                        } else if (colD.startsWith("http")) { mapBtnUrl = colD; } 
-                    } else { textToShow = typeOrText; } 
-                    
-                    let cardHtml = `<div class="memory-card">`; 
-                    if (date) cardHtml += `<div class="memory-date">🕒 ${new Date(date).toLocaleString('ja-JP')}</div>`; 
-                    if (textToShow) cardHtml += `<div class="memory-text">${textToShow}</div>`; 
-                    
-                    // ▼ ボタンコンテナの最後に「削除ボタン」を挿入！
-                    cardHtml += `<div class="btn-container">`; 
-                    if (mapBtnUrl) cardHtml += `<a href="${mapBtnUrl}" target="_blank" class="btn btn-map">📍 地図を見る</a>`; 
-                    if (imgBtnUrl) cardHtml += `<a href="${imgBtnUrl}" target="_blank" class="btn btn-img">🖼 画像を開く</a>`; 
-                    cardHtml += `<button onclick="deleteMemory('${date}')" class="btn btn-delete">🗑️ 削除</button>`;
-                    cardHtml += `</div></div>`; 
-                    
-                    listContainer.innerHTML += cardHtml; 
-                } 
-                if (hasPins && map) { document.getElementById("map").style.display = "block"; map.fitBounds(bounds); } 
-            } catch (error) { document.getElementById('loading').innerText = "通信エラーが発生しました: " + error; } 
-        }
-
-        async function main() { try { if (typeof google !== 'undefined' && typeof google.maps !== 'undefined') { initMap(); } await liff.init({ liffId: "2009431992-aQfZHA0X" }); if (!liff.isLoggedIn()) { liff.login(); } else { const profile = await liff.getProfile(); document.getElementById('welcome').innerText = profile.displayName + "の記憶領域"; fetchData(); } } catch (e) { document.getElementById('welcome').innerHTML = "<span style='color:red; font-weight:bold;'>エラー発生: " + e.message + "</span>"; document.getElementById('loading').style.display = 'none'; } }
-        main();
-    </script>
-</body>
-</html>
+                stagingFiles = stagingFiles.concat
