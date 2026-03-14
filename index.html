@@ -32,20 +32,20 @@
         #input-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto;}
         
-        #preview-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-        .preview-box { width: calc(33.333% - 6.7px); aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ddd; background: #fafafa;}
+        /* ▼▼▼ 極限進化：CSS Gridで絶対に3列に並べる ▼▼▼ */
+        #preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .preview-box { aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ddd; background: #fafafa;}
         .preview-box img { width: 100%; height: 100%; object-fit: cover; }
         .delete-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-        .add-more-box { width: calc(33.333% - 6.7px); aspect-ratio: 1/1; border-radius: 8px; border: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; cursor: pointer; background: #fafafa;}
+        .add-more-box { aspect-ratio: 1/1; border-radius: 8px; border: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; cursor: pointer; background: #fafafa;}
         .add-more-box span { font-size: 28px; font-weight: bold; line-height: 1; margin-bottom: 2px;}
         .add-more-box p { font-size: 0.7rem; margin: 0; font-weight: bold; }
+        /* ▲▲▲ 魔法陣ここまで ▲▲▲ */
 
         #modal-map-container { position: relative; width: 100%; height: 200px; display: none; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; box-shadow: inset 0 0 5px rgba(0,0,0,0.1);}
         #modal-map { width: 100%; height: 100%; }
         .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); font-size: 36px; pointer-events: none; z-index: 10; text-shadow: 0px 3px 5px rgba(0,0,0,0.4); }
-        
-        /* ▼【修正】ボタンを右上に移動！ */
         .recenter-btn { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; background: white; border: none; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 10;}
 
         .gps-container { display: flex; align-items: center; justify-content: center; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #eee;}
@@ -70,8 +70,8 @@
         <div class="fab-main" onclick="document.getElementById('main-trigger').click()">＋</div>
     </div>
 
-    <input type="file" id="main-trigger" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
-
+    <input type="file" id="main-trigger" accept="image/*" capture="environment" onchange="handleDirectFiles(event)" style="display: none;">
+    <input type="file" id="add-more-trigger" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
     <div id="input-modal">
         <div class="modal-content">
             <div id="preview-grid"></div>
@@ -155,15 +155,12 @@
             }
         }
 
-        // ▼【進化】5枚制限の関所を追加！
         function handleDirectFiles(event) {
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
 
-            // 今ある枚数 ＋ 新しく選んだ枚数 が 5 を超えるかチェック
             if (stagingFiles.length + files.length > 5) {
                 alert("⚠️ 一度に送信できる写真は最大5枚までです。\n超過分は自動的に除外されます。");
-                // 5枚になるように、新しく選んだファイルの後ろを切り捨てる
                 const allowedCount = 5 - stagingFiles.length;
                 stagingFiles = stagingFiles.concat(files.slice(0, allowedCount));
             } else {
@@ -173,20 +170,19 @@
             renderPreviews();
             document.getElementById('input-modal').style.display = 'flex';
             getGps(); 
-            event.target.value = ''; // 同じ写真を再度選べるようにリセット
+            event.target.value = ''; 
         }
 
         function openTextModal() { document.getElementById('input-modal').style.display = 'flex'; getGps(); }
 
         function closeModal() {
             document.getElementById('input-modal').style.display = 'none';
-            document.getElementById('main-trigger').value = ""; document.getElementById('memo-input').value = "";
+            document.getElementById('main-trigger').value = ""; document.getElementById('add-more-trigger').value = ""; document.getElementById('memo-input').value = "";
             document.getElementById('gps-status').innerText = "⏳ 位置情報を準備中...";
             document.getElementById('modal-map-container').style.display = 'none';
             currentLat = null; currentLng = null; stagingFiles = []; renderPreviews();
         }
 
-        // ▼【進化】5枚の時は追加ボタンを隠す！
         function renderPreviews() {
             const grid = document.getElementById('preview-grid');
             grid.innerHTML = ''; 
@@ -201,10 +197,10 @@
                 box.appendChild(img); box.appendChild(deleteBtn); grid.appendChild(box);
             });
             
-            // 5枚未満の時だけ「＋追加」ボタンを表示する
             if (stagingFiles.length < 5) {
                 const addBox = document.createElement('div'); addBox.className = 'add-more-box';
-                addBox.onclick = function() { document.getElementById('main-trigger').click(); };
+                // ▼ 修正：こっちは複数選択OKの add-more-trigger を呼ぶ！
+                addBox.onclick = function() { document.getElementById('add-more-trigger').click(); };
                 addBox.innerHTML = `<span>＋</span><p>追加</p>`;
                 grid.appendChild(addBox);
             }
@@ -284,15 +280,4 @@
                     if (textToShow) cardHtml += `<div class="memory-text">${textToShow}</div>`; 
                     cardHtml += `<div class="btn-container">`; 
                     if (mapBtnUrl) cardHtml += `<a href="${mapBtnUrl}" target="_blank" class="btn btn-map">📍 地図を見る</a>`; 
-                    if (imgBtnUrl) cardHtml += `<a href="${imgBtnUrl}" target="_blank" class="btn btn-img">🖼 画像を開く</a>`; 
-                    cardHtml += `</div></div>`; listContainer.innerHTML += cardHtml; 
-                } 
-                if (hasPins && map) { document.getElementById("map").style.display = "block"; map.fitBounds(bounds); } 
-            } catch (error) { document.getElementById('loading').innerText = "通信エラーが発生しました: " + error; } 
-        }
-
-        async function main() { try { if (typeof google !== 'undefined' && typeof google.maps !== 'undefined') { initMap(); } await liff.init({ liffId: "2009431992-aQfZHA0X" }); if (!liff.isLoggedIn()) { liff.login(); } else { const profile = await liff.getProfile(); document.getElementById('welcome').innerText = profile.displayName + "の記憶領域"; fetchData(); } } catch (e) { document.getElementById('welcome').innerHTML = "<span style='color:red; font-weight:bold;'>エラー発生: " + e.message + "</span>"; document.getElementById('loading').style.display = 'none'; } }
-        main();
-    </script>
-</body>
-</html>
+                    if (imgBtnUrl) cardHtml += `<a href="${imgBtnUrl
