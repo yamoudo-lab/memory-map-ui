@@ -280,4 +280,15 @@
                     if (textToShow) cardHtml += `<div class="memory-text">${textToShow}</div>`; 
                     cardHtml += `<div class="btn-container">`; 
                     if (mapBtnUrl) cardHtml += `<a href="${mapBtnUrl}" target="_blank" class="btn btn-map">📍 地図を見る</a>`; 
-                    if (imgBtnUrl) cardHtml += `<a href="${imgBtnUrl
+                    if (imgBtnUrl) cardHtml += `<a href="${imgBtnUrl}" target="_blank" class="btn btn-img">🖼 画像を開く</a>`; 
+                    cardHtml += `</div></div>`; listContainer.innerHTML += cardHtml; 
+                } 
+                if (hasPins && map) { document.getElementById("map").style.display = "block"; map.fitBounds(bounds); } 
+            } catch (error) { document.getElementById('loading').innerText = "通信エラーが発生しました: " + error; } 
+        }
+
+        async function main() { try { if (typeof google !== 'undefined' && typeof google.maps !== 'undefined') { initMap(); } await liff.init({ liffId: "2009431992-aQfZHA0X" }); if (!liff.isLoggedIn()) { liff.login(); } else { const profile = await liff.getProfile(); document.getElementById('welcome').innerText = profile.displayName + "の記憶領域"; fetchData(); } } catch (e) { document.getElementById('welcome').innerHTML = "<span style='color:red; font-weight:bold;'>エラー発生: " + e.message + "</span>"; document.getElementById('loading').style.display = 'none'; } }
+        main();
+    </script>
+</body>
+</html>
