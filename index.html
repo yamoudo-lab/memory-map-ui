@@ -28,10 +28,13 @@
         .memory-text { font-size: 1rem; line-height: 1.5; margin-bottom: 15px; white-space: pre-wrap; color: #222;}
         .btn-container { display: flex; gap: 10px; flex-wrap: wrap; }
         
-        .btn { display: inline-block; padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; text-decoration: none; font-weight: bold; cursor:pointer;}
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; text-decoration: none; font-weight: bold; cursor:pointer;}
         .btn-map { background-color: #E8F5E9; color: #2E7D32; border:none; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
-        /* ▼ 進化：編集ボタンのデザイン ▼ */
         .btn-edit { background-color: #FFF3E0; color: #E65100; border:none; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+        
+        /* ▼ 進化：ナビボタンと写真追加ボタンのデザイン ▼ */
+        .btn-nav { background-color: #E3F2FD; color: #1565C0; border:none; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+        .btn-photo { background-color: #F3E5F5; color: #6A1B9A; border:none; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
         
         .thumb-img { height: 110px; min-width: 110px; object-fit: cover; border-radius: 10px; border: 1px solid #eee; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.08);}
         .thumb-img:active { opacity: 0.7; transform: scale(0.98);}
@@ -39,7 +42,6 @@
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; align-items: flex-end;}
         .fab-main { width: 65px; height: 65px; background-color: #06C755; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 36px; box-shadow: 0 6px 15px rgba(6, 199, 85, 0.4); cursor: pointer; transition: 0.2s; font-weight: bold;}
 
-        /* ライトボックスのUI */
         #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; justify-content: center; align-items: center; }
         #lb-img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; }
         .lb-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 36px; cursor: pointer; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding: 10px;}
@@ -49,7 +51,6 @@
         .lb-next { right: 0; }
         .lb-counter { position: absolute; bottom: 30px; color: white; font-size: 1rem; font-weight: bold; letter-spacing: 2px;}
 
-        /* 入力＆編集モーダル共通 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto;}
         
@@ -92,6 +93,8 @@
 
     <input type="file" id="main-trigger" accept="image/*" capture="environment" onchange="handleDirectFiles(event)" style="display: none;">
     <input type="file" id="add-more-trigger" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
+    
+    <input type="file" id="append-photo-trigger" accept="image/*" multiple onchange="handleAppendPhotos(event)" style="display: none;">
 
     <div id="lightbox">
         <div class="lb-close" onclick="closeLightbox()">×</div>
@@ -121,19 +124,17 @@
             <button class="action-btn btn-cancel" onclick="closeEditModal()">キャンセル</button>
         </div>
     </div>
+
     <script>
         // 【重要2】GASのURLを貼る！
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxS4N8TrRihDFQJnNMjbiKYUTtCEIkX0rBqTpbxVkzUBidv-CcSi-Ym-TU9EtfPxY18/exec";
         
-        let map; let bounds;
-        let currentLat = null; let currentLng = null;
+        let map; let bounds; let currentLat = null; let currentLng = null;
         let stagingFiles = []; let modalMap = null; 
 
-        window.galleryData = {}; 
-        window.memoData = {}; // ★ 編集用に各カードの生メモを保持する箱
-        let currentLbDate = "";  
-        let currentLbIndex = 0;  
-        let currentEditDate = ""; // ★ 今編集しているカードの日付
+        window.galleryData = {}; window.memoData = {};
+        let currentLbDate = ""; let currentLbIndex = 0; let currentEditDate = ""; 
+        let currentAppendDate = ""; // ★ 写真追加対象のカード日付
 
         function jumpToCard(dateStr, lat, lng) {
             const card = document.getElementById('card-' + new Date(dateStr).getTime());
@@ -144,46 +145,8 @@
         }
 
         function focusMap(lat, lng) {
-            if (map && lat && lng) {
-                map.panTo({lat: parseFloat(lat), lng: parseFloat(lng)});
-                map.setZoom(16);
-            }
+            if (map && lat && lng) { map.panTo({lat: parseFloat(lat), lng: parseFloat(lng)}); map.setZoom(16); }
         }
-
-        // ▼▼▼ 編集機能（Update）の魔法陣 ▼▼▼
-        function openEditModal(dateStr) {
-            currentEditDate = dateStr;
-            // 生のメモデータをテキストエリアに入れる
-            document.getElementById('edit-memo-input').value = window.memoData[dateStr] || "";
-            document.getElementById('edit-modal').style.display = 'flex';
-        }
-
-        function closeEditModal() {
-            document.getElementById('edit-modal').style.display = 'none';
-            document.getElementById('edit-memo-input').value = "";
-        }
-
-        async function submitEdit() {
-            const newMemoText = document.getElementById('edit-memo-input').value;
-            closeEditModal();
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('loading').innerText = "💾 メモを上書き中...";
-
-            try {
-                // GASに「メモを更新してくれ」と頼む
-                const payload = { action: "update", date: currentEditDate, newMemo: newMemoText };
-                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-                
-                alert("✅ メモを上書き保存しました！");
-                document.getElementById('memory-list').innerHTML = '';
-                document.getElementById('loading').innerText = "記憶を再召喚中...";
-                fetchData(); 
-            } catch (error) { 
-                alert("❌ 更新エラー: " + error); 
-                document.getElementById('loading').style.display = 'none'; 
-            }
-        }
-        // ▲▲▲ 魔法陣ここまで ▲▲▲
 
         function compressImage(file, maxWidth, maxHeight, quality) {
             return new Promise((resolve, reject) => {
@@ -202,37 +165,85 @@
             });
         }
 
+        // ▼▼▼ 進化：後から写真を追加する魔法陣 ▼▼▼
+        function triggerAppendPhoto(dateStr) {
+            currentAppendDate = dateStr;
+            document.getElementById('append-photo-trigger').click();
+        }
+
+        async function handleAppendPhotos(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+            if (files.length > 5) {
+                alert("⚠️ 一度に追加できるのは5枚までです！");
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerText = "🗜️ 写真を圧縮＆追加中...";
+            
+            try {
+                let base64Images = [];
+                for (let i = 0; i < files.length; i++) {
+                    let compressed = await compressImage(files[i], 1200, 1200, 0.7);
+                    base64Images.push({ filename: `liff_append_${Date.now()}_${i}.jpg`, base64: compressed });
+                }
+
+                const payload = { action: "appendImage", date: currentAppendDate, images: base64Images };
+                
+                document.getElementById('loading').innerText = "📡 データベースへ送信中...";
+                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                
+                alert("✅ 写真の追加に成功しました！");
+                document.getElementById('append-photo-trigger').value = '';
+                document.getElementById('memory-list').innerHTML = '';
+                document.getElementById('loading').innerText = "記憶を再召喚中...";
+                fetchData(); 
+            } catch (error) { 
+                alert("❌ エラー: " + error); 
+                document.getElementById('loading').style.display = 'none'; 
+            }
+        }
+        // ▲▲▲ ▲▲▲
+
+        function openEditModal(dateStr) {
+            currentEditDate = dateStr; document.getElementById('edit-memo-input').value = window.memoData[dateStr] || ""; document.getElementById('edit-modal').style.display = 'flex';
+        }
+        function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; document.getElementById('edit-memo-input').value = ""; }
+        async function submitEdit() {
+            const newMemoText = document.getElementById('edit-memo-input').value; closeEditModal();
+            document.getElementById('loading').style.display = 'block'; document.getElementById('loading').innerText = "💾 メモを上書き中...";
+            try {
+                const payload = { action: "update", date: currentEditDate, newMemo: newMemoText };
+                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                alert("✅ メモを上書き保存しました！"); document.getElementById('memory-list').innerHTML = ''; document.getElementById('loading').innerText = "記憶を再召喚中..."; fetchData(); 
+            } catch (error) { alert("❌ 更新エラー: " + error); document.getElementById('loading').style.display = 'none'; }
+        }
+
         function openLightbox(dateStr, index) { currentLbDate = dateStr; currentLbIndex = index; updateLightbox(); document.getElementById('lightbox').style.display = 'flex'; }
         function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
         function changeImage(step) {
             const urls = window.galleryData[currentLbDate]; currentLbIndex += step;
-            if (currentLbIndex < 0) currentLbIndex = urls.length - 1; 
-            if (currentLbIndex >= urls.length) currentLbIndex = 0;    
-            updateLightbox();
+            if (currentLbIndex < 0) currentLbIndex = urls.length - 1; if (currentLbIndex >= urls.length) currentLbIndex = 0; updateLightbox();
         }
         function updateLightbox() {
-            const urls = window.galleryData[currentLbDate];
-            let targetUrl = urls[currentLbIndex]; let displayUrl = targetUrl;
-            if (targetUrl.includes("drive.google.com/file/d/")) {
-                const match = targetUrl.match(/\/d\/(.+?)\//);
+            const urls = window.galleryData[currentLbDate]; let displayUrl = urls[currentLbIndex];
+            if (displayUrl.includes("drive.google.com/file/d/")) {
+                const match = displayUrl.match(/\/d\/(.+?)\//);
                 if (match && match[1]) displayUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
             }
-            document.getElementById('lb-img').src = displayUrl;
-            document.getElementById('lb-counter').innerText = `${currentLbIndex + 1} / ${urls.length}`;
-            const navs = document.querySelectorAll('.lb-nav');
-            navs.forEach(nav => nav.style.display = urls.length > 1 ? 'block' : 'none');
+            document.getElementById('lb-img').src = displayUrl; document.getElementById('lb-counter').innerText = `${currentLbIndex + 1} / ${urls.length}`;
+            const navs = document.querySelectorAll('.lb-nav'); navs.forEach(nav => nav.style.display = urls.length > 1 ? 'block' : 'none');
         }
 
         async function deleteSingleImage() {
-            if (!confirm("現在表示している『この写真1枚だけ』を削除しますか？\n（Driveからも消去されます）")) return;
+            if (!confirm("現在表示している『この写真1枚だけ』を削除しますか？")) return;
             const targetUrl = window.galleryData[currentLbDate][currentLbIndex]; closeLightbox();
             document.getElementById('loading').style.display = 'block'; document.getElementById('loading').innerText = "✂️ 写真を1枚消去中...";
             try {
                 const payload = { action: "deleteImage", date: currentLbDate, imageUrl: targetUrl };
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-                alert("✅ 写真を1枚削除しました。");
-                document.getElementById('memory-list').innerHTML = ''; document.getElementById('loading').innerText = "記憶を再召喚中...";
-                initMap(); fetchData(); 
+                alert("✅ 写真を1枚削除しました。"); document.getElementById('memory-list').innerHTML = ''; document.getElementById('loading').innerText = "記憶を再召喚中..."; initMap(); fetchData(); 
             } catch (error) { alert("❌ 削除エラー: " + error); document.getElementById('loading').style.display = 'none'; }
         }
 
@@ -267,7 +278,7 @@
         function handleDirectFiles(event) {
             const files = Array.from(event.target.files); if (files.length === 0) return;
             if (stagingFiles.length + files.length > 5) {
-                alert("⚠️ 最大5枚までです。超過分は除外されます。"); stagingFiles = stagingFiles.concat(files.slice(0, 5 - stagingFiles.length));
+                alert("⚠️ 最大5枚までです。"); stagingFiles = stagingFiles.concat(files.slice(0, 5 - stagingFiles.length));
             } else { stagingFiles = stagingFiles.concat(files); }
             renderPreviews(); document.getElementById('input-modal').style.display = 'flex'; getGps(); event.target.value = ''; 
         }
@@ -327,7 +338,15 @@
         }
 
         function initMap() { 
-            map = new google.maps.Map(document.getElementById("map"), { center: { lat: 35.6895, lng: 139.6917 }, zoom: 5, disableDefaultUI: true, zoomControl: true }); bounds = new google.maps.LatLngBounds(); 
+            map = new google.maps.Map(document.getElementById("map"), { 
+                center: { lat: 35.6895, lng: 139.6917 }, 
+                zoom: 5, 
+                disableDefaultUI: true, 
+                zoomControl: true,
+                // ▼▼▼ 進化：マップ右上の「拡大ボタン（全画面表示）」を復活させる！ ▼▼▼
+                fullscreenControl: true 
+            }); 
+            bounds = new google.maps.LatLngBounds(); 
         }
         
         async function fetchData() { 
@@ -336,16 +355,14 @@
                 document.getElementById('loading').style.display = 'none'; 
                 const listContainer = document.getElementById('memory-list'); let hasPins = false; 
                 
-                window.galleryData = {}; 
-                window.memoData = {}; // 初期化
+                window.galleryData = {}; window.memoData = {}; 
 
                 for (let i = data.length - 1; i > 0; i--) { 
                     const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || ""; 
                     if (!date) continue; 
                     
                     const timeId = new Date(date).getTime(); 
-                    let textToShow = ""; 
-                    let originalUrls = []; let directImgUrls = [];
+                    let textToShow = ""; let originalUrls = []; let directImgUrls = [];
                     
                     if (colD && colD.startsWith("http")) { 
                         originalUrls = colD.split(","); 
@@ -357,13 +374,9 @@
                         }
                     }
                     
-                    window.galleryData[date] = originalUrls;
-                    // 生のメモデータを格納（編集用）
-                    window.memoData[date] = colC;
-                    
+                    window.galleryData[date] = originalUrls; window.memoData[date] = colC;
                     let latStr = null; let lngStr = null;
 
-                    // 表示用テキストの整形
                     if (typeOrText === "画像") { textToShow = "📷 写真を記録しました"; 
                     } else if (typeOrText === "位置情報") { textToShow = "📍 " + colC; 
                         if (colE) { 
@@ -391,15 +404,24 @@
                         cardHtml += `</div>`;
                     }
 
+                    // ▼▼▼ 進化：ナビ機能、写真追加機能のボタンを追加 ▼▼▼
                     cardHtml += `<div class="btn-container">`; 
                     if (latStr && lngStr) {
-                        cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map">📍 地図を中心にする</button>`; 
+                        // 地図を中心にするボタン
+                        cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map">📍 マップ</button>`; 
+                        
+                        // 【新】Google Mapsアプリを起動して経路案内（ナビ）を開始するボタン！
+                        cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=${latStr},${lngStr}" target="_blank" class="btn btn-nav">🧭 ナビ開始</a>`; 
                     }
-                    // ▼▼▼ 進化：編集ボタンを追加 ▼▼▼
-                    cardHtml += `<button onclick="openEditModal('${date}')" class="btn btn-edit">📝 メモを編集</button>`;
-                    // ▲▲▲ ▲▲▲
+                    
+                    // 編集ボタン
+                    cardHtml += `<button onclick="openEditModal('${date}')" class="btn btn-edit">📝 メモ</button>`;
+                    
+                    // 【新】既存のカードに後から写真だけを追加するボタン！
+                    cardHtml += `<button onclick="triggerAppendPhoto('${date}')" class="btn btn-photo">📸 写真追加</button>`;
                     
                     cardHtml += `</div></div>`; 
+                    // ▲▲▲ ▲▲▲
                     
                     listContainer.innerHTML += cardHtml; 
                 } 
