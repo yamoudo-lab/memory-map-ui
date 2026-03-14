@@ -16,7 +16,6 @@
         
         .header { text-align: center; margin-bottom: 10px; }
         h1 { color: #06C755; margin: 0; font-size: 1.8rem; }
-        /* ▼ ダサい名前をスタイリッシュにするための微調整 */
         #welcome { font-size: 0.95rem; color: #888; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;}
         
         #map { height: 280px; width: 100%; border-radius: 12px; border: 2px solid #06C755; display: none; box-sizing: border-box;}
@@ -33,11 +32,9 @@
         .btn-map { background-color: #E8F5E9; color: #2E7D32; }
         .btn-img { background-color: #E3F2FD; color: #1565C0; }
 
-        /* ▼▼▼ 極限進化：FAB（浮きボタン）の3連デザイン ▼▼▼ */
+        /* ▼▼▼ 極限進化：FABを「＋」一つだけのシンプル＆最強仕様に戻す ▼▼▼ */
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; align-items: flex-end;}
-        .fab-sub { width: 45px; height: 45px; background-color: white; color: #333; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; border: 1px solid #ddd; transition: 0.2s;}
-        .fab-sub:active { background-color: #f0f0f0; }
-        .fab-main { width: 60px; height: 60px; background-color: #06C755; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s;}
+        .fab-main { width: 60px; height: 60px; background-color: #06C755; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 32px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; font-weight: bold;}
         .fab-main:active { transform: scale(0.95); }
         /* ▲▲▲ 魔法陣ここまで ▲▲▲ */
         
@@ -80,13 +77,11 @@
     <div id="memory-list"></div>
 
     <div class="fab-container">
-        <div class="fab-sub" onclick="openTextModal()" title="メモのみ">📝</div>
-        <div class="fab-sub" onclick="document.getElementById('gallery-trigger').click()" title="フォルダから複数選択">🖼️</div>
-        <div class="fab-main" onclick="document.getElementById('camera-trigger').click()" title="カメラ起動">📷</div>
+        <div class="fab-main" onclick="document.getElementById('main-trigger').click()">＋</div>
     </div>
 
-    <input type="file" id="camera-trigger" accept="image/*" capture="environment" onchange="handleDirectFiles(event)" style="display: none;">
-    <input type="file" id="gallery-trigger" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
+    <input type="file" id="main-trigger" accept="image/*" capture="environment" onchange="handleDirectFiles(event)" style="display: none;">
+    <input type="file" id="add-more-trigger" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
     <div id="input-modal">
         <div class="modal-content">
             <div id="preview-grid"></div>
@@ -186,11 +181,9 @@
             event.target.value = ''; 
         }
 
-        function openTextModal() { document.getElementById('input-modal').style.display = 'flex'; getGps(); }
-
         function closeModal() {
             document.getElementById('input-modal').style.display = 'none';
-            document.getElementById('camera-trigger').value = ""; document.getElementById('gallery-trigger').value = ""; document.getElementById('memo-input').value = "";
+            document.getElementById('main-trigger').value = ""; document.getElementById('add-more-trigger').value = ""; document.getElementById('memo-input').value = "";
             document.getElementById('gps-status').innerText = "⏳ 位置情報を準備中...";
             document.getElementById('modal-map-container').style.display = 'none';
             currentLat = null; currentLng = null; stagingFiles = []; renderPreviews();
@@ -211,8 +204,7 @@
             });
             if (stagingFiles.length < 5) {
                 const addBox = document.createElement('div'); addBox.className = 'add-more-box';
-                // ▼ ここもギャラリー用のトリガーを呼ぶ
-                addBox.onclick = function() { document.getElementById('gallery-trigger').click(); };
+                addBox.onclick = function() { document.getElementById('add-more-trigger').click(); };
                 addBox.innerHTML = `<span>＋</span><p>追加</p>`;
                 grid.appendChild(addBox);
             }
@@ -321,9 +313,7 @@
                     liff.login(); 
                 } else { 
                     const profile = await liff.getProfile(); 
-                    // ▼▼▼ 進化：ダサい「の記憶領域」をスタイリッシュな英語に変更！ ▼▼▼
                     document.getElementById('welcome').innerText = profile.displayName + "'s Memory Archive"; 
-                    // ▲▲▲ ▲▲▲
                     fetchData(); 
                 } 
             } catch (e) { 
