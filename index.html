@@ -23,6 +23,10 @@
         .btn { display: inline-block; padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; text-decoration: none; font-weight: bold; }
         .btn-map { background-color: #E8F5E9; color: #2E7D32; }
         .btn-img { background-color: #E3F2FD; color: #1565C0; }
+        
+        /* ▼▼▼ 追加：削除ボタンのデザイン ▼▼▼ */
+        .btn-delete { background-color: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; margin-left: auto;}
+        
         #loading { text-align: center; color: #06C755; font-weight: bold; margin-top: 30px; }
 
         .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; align-items: flex-end;}
@@ -32,7 +36,6 @@
         #input-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto;}
         
-        /* ▼▼▼ 極限進化：CSS Gridで絶対に3列に並べる ▼▼▼ */
         #preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .preview-box { aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ddd; background: #fafafa;}
         .preview-box img { width: 100%; height: 100%; object-fit: cover; }
@@ -41,7 +44,6 @@
         .add-more-box { aspect-ratio: 1/1; border-radius: 8px; border: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; cursor: pointer; background: #fafafa;}
         .add-more-box span { font-size: 28px; font-weight: bold; line-height: 1; margin-bottom: 2px;}
         .add-more-box p { font-size: 0.7rem; margin: 0; font-weight: bold; }
-        /* ▲▲▲ 魔法陣ここまで ▲▲▲ */
 
         #modal-map-container { position: relative; width: 100%; height: 200px; display: none; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; box-shadow: inset 0 0 5px rgba(0,0,0,0.1);}
         #modal-map { width: 100%; height: 100%; }
@@ -72,6 +74,7 @@
 
     <input type="file" id="main-trigger" accept="image/*" capture="environment" onchange="handleDirectFiles(event)" style="display: none;">
     <input type="file" id="add-more-trigger" accept="image/*" multiple onchange="handleDirectFiles(event)" style="display: none;">
+
     <div id="input-modal">
         <div class="modal-content">
             <div id="preview-grid"></div>
@@ -158,7 +161,6 @@
         function handleDirectFiles(event) {
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
-
             if (stagingFiles.length + files.length > 5) {
                 alert("⚠️ 一度に送信できる写真は最大5枚までです。\n超過分は自動的に除外されます。");
                 const allowedCount = 5 - stagingFiles.length;
@@ -166,7 +168,6 @@
             } else {
                 stagingFiles = stagingFiles.concat(files);
             }
-
             renderPreviews();
             document.getElementById('input-modal').style.display = 'flex';
             getGps(); 
@@ -196,10 +197,8 @@
                 deleteBtn.innerText = '✕'; deleteBtn.onclick = function() { removeFile(index); };
                 box.appendChild(img); box.appendChild(deleteBtn); grid.appendChild(box);
             });
-            
             if (stagingFiles.length < 5) {
                 const addBox = document.createElement('div'); addBox.className = 'add-more-box';
-                // ▼ 修正：こっちは複数選択OKの add-more-trigger を呼ぶ！
                 addBox.onclick = function() { document.getElementById('add-more-trigger').click(); };
                 addBox.innerHTML = `<span>＋</span><p>追加</p>`;
                 grid.appendChild(addBox);
@@ -211,34 +210,60 @@
         async function submitData() {
             if (modalMap) { currentLat = modalMap.getCenter().lat(); currentLng = modalMap.getCenter().lng(); }
             if (!currentLat || !currentLng) { alert("⚠️ 場所が決定されていません。少し待つか、地図を動かしてください。"); return; }
-
             const btn = document.querySelector('.btn-submit');
             btn.innerText = "🗜️ 圧縮中..."; btn.disabled = true;
-
             try {
                 const memoText = document.getElementById('memo-input').value;
                 const gpsText = `${currentLat},${currentLng}`;
                 let base64Images = [];
-
                 for (let i = 0; i < stagingFiles.length; i++) {
                     let file = stagingFiles[i];
                     let compressedBase64 = await compressImage(file, 1200, 1200, 0.7);
                     base64Images.push({ filename: `liff_${Date.now()}_${i}.jpg`, base64: compressedBase64 });
                 }
-
                 const payload = { source: "liff", memo: memoText, gps: gpsText, images: base64Images };
-
                 btn.innerText = "📡 データベースへ送信中...";
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-
                 alert("✅ 記憶の保存に成功しました！");
                 closeModal();
-                
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('memory-list').innerHTML = '';
+                // 送信後にマップもリセットするため initMap を呼ぶ
+                initMap();
                 fetchData(); 
             } catch (error) { alert("❌ 通信エラーが発生しました: " + error); } finally { btn.innerText = "🚀 送信する"; btn.disabled = false; }
         }
+
+        // ▼▼▼ 【極限進化】削除用の魔法陣 ▼▼▼
+        async function deleteMemory(dateStr) {
+            // 確認アラートを出す（誤操作防止）
+            if (!confirm("本当にこの記憶を削除しますか？\n（※写真もドライブから消去され、元に戻せません）")) return;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerText = "🗑️ 記憶を消去中...";
+            
+            try {
+                // GASに「削除しろ」という命令と「いつのデータか」を送る
+                const payload = { action: "delete", date: dateStr };
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload)
+                });
+
+                alert("✅ 記憶を完全に消去しました。");
+                
+                // リストと地図を初期化して再読み込み！
+                document.getElementById('memory-list').innerHTML = '';
+                document.getElementById('loading').innerText = "記憶を再召喚中...";
+                initMap(); 
+                fetchData(); 
+            } catch (error) {
+                alert("❌ 削除エラー: " + error);
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        // ▲▲▲ 魔法陣ここまで ▲▲▲
 
         function initMap() { map = new google.maps.Map(document.getElementById("map"), { center: { lat: 35.6895, lng: 139.6917 }, zoom: 5, mapTypeControl: false, streetViewControl: false }); bounds = new google.maps.LatLngBounds(); }
         
@@ -275,13 +300,19 @@
                             } 
                         } else if (colD.startsWith("http")) { mapBtnUrl = colD; } 
                     } else { textToShow = typeOrText; } 
+                    
                     let cardHtml = `<div class="memory-card">`; 
                     if (date) cardHtml += `<div class="memory-date">🕒 ${new Date(date).toLocaleString('ja-JP')}</div>`; 
                     if (textToShow) cardHtml += `<div class="memory-text">${textToShow}</div>`; 
+                    
+                    // ▼ ボタンコンテナの最後に「削除ボタン」を挿入！
                     cardHtml += `<div class="btn-container">`; 
                     if (mapBtnUrl) cardHtml += `<a href="${mapBtnUrl}" target="_blank" class="btn btn-map">📍 地図を見る</a>`; 
                     if (imgBtnUrl) cardHtml += `<a href="${imgBtnUrl}" target="_blank" class="btn btn-img">🖼 画像を開く</a>`; 
-                    cardHtml += `</div></div>`; listContainer.innerHTML += cardHtml; 
+                    cardHtml += `<button onclick="deleteMemory('${date}')" class="btn btn-delete">🗑️ 削除</button>`;
+                    cardHtml += `</div></div>`; 
+                    
+                    listContainer.innerHTML += cardHtml; 
                 } 
                 if (hasPins && map) { document.getElementById("map").style.display = "block"; map.fitBounds(bounds); } 
             } catch (error) { document.getElementById('loading').innerText = "通信エラーが発生しました: " + error; } 
