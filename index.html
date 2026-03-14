@@ -61,6 +61,7 @@
         .action-btn { padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-submit { background-color: #06C755; color: white; }
         .btn-cancel { background-color: white; color: #888; border: 1px solid #ddd;}
+        .swal2-container { z-index: 10000 !important; }
         
         /* ポップアップのフォントを綺麗にする追加CSS */
         .swal2-title { font-size: 1.2rem !important; }
@@ -299,14 +300,18 @@
                 const memoText = document.getElementById('memo-input').value; const gpsText = `${currentLat},${currentLng}`;
                 let base64Images = [];
                 for (let i = 0; i < stagingFiles.length; i++) {
-                    let compressedBase64 = await compressImage(stagingFiles[i], 800, 800, 0.6);
+                    let compressedBase64 = await compressImage(stagingFiles[i], 800, 800, 0.6); // 爆速版
                     base64Images.push({ filename: `liff_${Date.now()}_${i}.jpg`, base64: compressedBase64 });
                 }
                 const payload = { userId: currentUserId, source: "liff", memo: memoText, gps: gpsText, images: base64Images };
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 
-                await Swal.fire({ title: '完了', text: '保存しました！', icon: 'success', confirmButtonColor: '#06C755' });
+                // 🚀 【修正ポイント】先に画面を閉じる！！
                 closeModal();
+                
+                // その後に完了ポップアップを出す！
+                await Swal.fire({ title: '完了', text: '保存しました！', icon: 'success', confirmButtonColor: '#06C755' });
+                
                 document.getElementById('memory-list').innerHTML = ''; showLoading("Loading data..."); initMap(); fetchData(); 
             } catch (error) { 
                 Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' });
