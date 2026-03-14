@@ -282,25 +282,29 @@
 
         function removeFile(index) { stagingFiles.splice(index, 1); renderPreviews(); }
 
-        // ★修正：送信完了後に、画面を「先に閉じてから」ポップアップを出す神UX
+        // ★修正：送信完了後に、画面を「先に閉じてから」ポップアップを出す神UX ＋ ボタンのフリーズ解除！
         async function submitData() {
             if (modalMap) { currentLat = modalMap.getCenter().lat(); currentLng = modalMap.getCenter().lng(); }
             if (!currentLat || !currentLng) { 
                 Swal.fire({ title: '注意', text: '場所が決定されていません。', icon: 'warning', confirmButtonColor: '#06C755' });
                 return; 
             }
-            const btn = document.querySelector('.btn-submit'); btn.innerText = "Uploading..."; btn.disabled = true; 
+            
+            // ★念のため「入力画面の送信ボタン」だけを確実に指定する
+            const btn = document.querySelector('#input-modal .btn-submit'); 
+            btn.innerText = "Uploading..."; btn.disabled = true; 
+            
             try {
                 const memoText = document.getElementById('memo-input').value; const gpsText = `${currentLat},${currentLng}`;
                 let base64Images = [];
                 for (let i = 0; i < stagingFiles.length; i++) {
-                    let compressedBase64 = await compressImage(stagingFiles[i], 800, 800, 0.6); // ★爆速化
+                    let compressedBase64 = await compressImage(stagingFiles[i], 800, 800, 0.6); // 爆速化
                     base64Images.push({ filename: `liff_${Date.now()}_${i}.jpg`, base64: compressedBase64 });
                 }
                 const payload = { userId: currentUserId, source: "liff", memo: memoText, gps: gpsText, images: base64Images };
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 
-                // ★先に画面を閉じる！これでポップアップが裏に隠れない！
+                // 先に画面を閉じる！これでポップアップが裏に隠れない！
                 closeModal();
                 
                 // その後でドーンと綺麗に出す！
@@ -309,6 +313,8 @@
                 document.getElementById('memory-list').innerHTML = ''; showLoading("Loading data..."); initMap(); fetchData(); 
             } catch (error) { 
                 Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' });
+            } finally {
+                // 🚀 【超重要】ここが消えていた！ 成功しても失敗しても、ボタンを絶対に元の状態に戻す！
                 btn.innerText = "🚀 送信する"; btn.disabled = false;
             }
         }
