@@ -44,7 +44,7 @@
         
         /* ★修正：入力画面がポップアップの上に来ないようにz-indexを1000に下げる */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto;}
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90dvh; overflow-y: auto;}
         #preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .preview-box { aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ddd; background: #fafafa;}
         .preview-box img { width: 100%; height: 100%; object-fit: cover; }
@@ -52,13 +52,13 @@
         .add-more-box { aspect-ratio: 1/1; border-radius: 8px; border: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; cursor: pointer; background: #fafafa;}
         .add-more-box span { font-size: 28px; font-weight: bold; line-height: 1; margin-bottom: 2px;}
         .add-more-box p { font-size: 0.7rem; margin: 0; font-weight: bold; }
-        #modal-map-container { position: relative; width: 100%; height: 200px; display: none; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; box-shadow: inset 0 0 5px rgba(0,0,0,0.1);}
+        #modal-map-container { position: relative; width: 100%; height: 200px; display: none; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); flex-shrink: 0;}
         #modal-map { width: 100%; height: 100%; }
         .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); font-size: 36px; pointer-events: none; z-index: 10; text-shadow: 0px 3px 5px rgba(0,0,0,0.4); }
         .recenter-btn { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; background: white; border: none; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 10;}
         .gps-container { display: flex; align-items: center; justify-content: center; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #eee;}
         #gps-status { font-size: 0.9rem; font-weight: bold; }
-        textarea { width: 100%; height: 80px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 1rem; box-sizing: border-box; resize: none; }
+        textarea { width: 100%; height: 80px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 1rem; box-sizing: border-box; resize: none; flex-shrink: 0; }
         .action-btn { padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-submit { background-color: #06C755; color: white; }
         .btn-cancel { background-color: white; color: #888; border: 1px solid #ddd;}
