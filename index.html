@@ -42,10 +42,10 @@
         .lb-next { right: 0; }
         .lb-counter { position: absolute; bottom: 30px; color: white; font-size: 1rem; font-weight: bold; letter-spacing: 2px;}
         
-        /* ★修正：入力画面がポップアップの上に来ないようにz-indexを1000に下げる */
+        /* 100dvhとflex-shrinkでキーボードのカオスを無効化 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px 20px 60px 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; max-height: 90dvh; overflow-y: auto;}
-        #preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        #preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex-shrink: 0;}
         .preview-box { aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ddd; background: #fafafa;}
         .preview-box img { width: 100%; height: 100%; object-fit: cover; }
         .delete-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; cursor: pointer; }
@@ -63,26 +63,11 @@
         .btn-submit { background-color: #06C755; color: white; }
         .btn-cancel { background-color: white; color: #888; border: 1px solid #ddd;}
         
-        /* ★修正：ポップアップ（SweetAlert）が絶対に最前面に来るようにする */
         .swal2-container { z-index: 10000 !important; }
         .swal2-title { font-size: 1.2rem !important; }
         .swal2-html-container { font-size: 0.9rem !important; }
-        /* ▼▼ 追加：メモの折り畳み用CSS ▼▼ */
-        .memory-text.collapsed {
-            display: -webkit-box;
-            -webkit-line-clamp: 3; /* 3行で切り捨てる */
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin-bottom: 5px; /* ボタンとの隙間を詰める */
-        }
-        .read-more-btn {
-            color: #06C755;
-            font-size: 0.85rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
-            display: inline-block;
-        }
+        .memory-text.collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 5px; }
+        .read-more-btn { color: #06C755; font-size: 0.85rem; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -133,7 +118,7 @@
         let currentLbDate = ""; let currentLbIndex = 0; let currentEditDate = ""; let currentAppendDate = "";
 
         function showLoading(text) { document.getElementById('loading').style.display = 'flex'; document.getElementById('loading').innerHTML = `<span class="spinner"></span> ${text}`; }
-        // ▼▼ 追加：メモの開閉を実行する関数 ▼▼
+        
         function toggleMemo(id) {
             const textDiv = document.getElementById(`memo-${id}`);
             const btn = document.getElementById(`rmbtn-${id}`);
@@ -153,6 +138,7 @@
         }
         function focusMap(lat, lng) { if (map && lat && lng) { map.panTo({lat: parseFloat(lat), lng: parseFloat(lng)}); map.setZoom(14); } }
 
+        // ★修正：エラーの原因だった余計なif文を消してクリーンにした関数
         function triggerAppendPhoto(dateStr) { 
             currentAppendDate = dateStr; 
             document.getElementById('append-photo-trigger').click(); 
@@ -169,7 +155,7 @@
             try {
                 let base64Images = [];
                 for (let i = 0; i < files.length; i++) {
-                    let compressed = await compressImage(files[i], 800, 800, 0.6); // ★高速化
+                    let compressed = await compressImage(files[i], 800, 800, 0.6);
                     base64Images.push({ filename: `liff_append_${Date.now()}_${i}.jpg`, base64: compressed });
                 }
                 const payload = { userId: currentUserId, action: "appendImage", date: currentAppendDate, images: base64Images };
@@ -201,12 +187,11 @@
             }
         }
 
-        // ★修正：重い処理を飛ばす「爆速圧縮エンジン」
         function compressImage(file, maxWidth, maxHeight, quality) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = function() {
-                    URL.revokeObjectURL(img.src); // メモリ解放
+                    URL.revokeObjectURL(img.src); 
                     let width = img.width; let height = img.height;
                     if (width > height) { if (width > maxWidth) { height = Math.round(height * (maxWidth / width)); width = maxWidth; }
                     } else { if (height > maxHeight) { width = Math.round(width * (maxHeight / height)); height = maxHeight; } }
@@ -214,7 +199,7 @@
                     const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.onerror = error => reject(error);
-                img.src = URL.createObjectURL(file); // ★重いFileReaderを使わず直接メモリ展開
+                img.src = URL.createObjectURL(file);
             });
         }
 
@@ -313,7 +298,6 @@
 
         function removeFile(index) { stagingFiles.splice(index, 1); renderPreviews(); }
 
-        // ★修正：送信完了後に、画面を「先に閉じてから」ポップアップを出す神UX ＋ ボタンのフリーズ解除！
         async function submitData() {
             if (modalMap) { currentLat = modalMap.getCenter().lat(); currentLng = modalMap.getCenter().lng(); }
             if (!currentLat || !currentLng) { 
@@ -321,7 +305,6 @@
                 return; 
             }
             
-            // ★念のため「入力画面の送信ボタン」だけを確実に指定する
             const btn = document.querySelector('#input-modal .btn-submit'); 
             btn.innerText = "Uploading..."; btn.disabled = true; 
             
@@ -329,23 +312,18 @@
                 const memoText = document.getElementById('memo-input').value; const gpsText = `${currentLat},${currentLng}`;
                 let base64Images = [];
                 for (let i = 0; i < stagingFiles.length; i++) {
-                    let compressedBase64 = await compressImage(stagingFiles[i], 800, 800, 0.6); // 爆速化
+                    let compressedBase64 = await compressImage(stagingFiles[i], 800, 800, 0.6);
                     base64Images.push({ filename: `liff_${Date.now()}_${i}.jpg`, base64: compressedBase64 });
                 }
                 const payload = { userId: currentUserId, source: "liff", memo: memoText, gps: gpsText, images: base64Images };
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 
-                // 先に画面を閉じる！これでポップアップが裏に隠れない！
                 closeModal();
-                
-                // その後でドーンと綺麗に出す！
                 await Swal.fire({ title: '完了', text: '保存しました！', icon: 'success', confirmButtonColor: '#06C755' });
-                
                 document.getElementById('memory-list').innerHTML = ''; showLoading("Loading data..."); initMap(); fetchData(); 
             } catch (error) { 
                 Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' });
             } finally {
-                // 🚀 【超重要】ここが消えていた！ 成功しても失敗しても、ボタンを絶対に元の状態に戻す！
                 btn.innerText = "🚀 送信する"; btn.disabled = false;
             }
         }
@@ -374,13 +352,8 @@
             map = new google.maps.Map(document.getElementById("map"), { center: { lat: 35.6895, lng: 139.6917 }, zoom: 5, disableDefaultUI: true, zoomControl: true, fullscreenControl: true }); bounds = new google.maps.LatLngBounds(); 
         }
         
-        // --------------------------------------------------
-        // ▼▼ 修正：爆速キャッシュエンジン版の fetchData ▼▼
-        // --------------------------------------------------
         async function fetchData() {
             const cacheKey = "memoryMapCache_" + currentUserId;
-
-            // ① まずスマホ内（ローカル）の前回データがあれば、0.5秒で即表示！
             const cachedDataStr = localStorage.getItem(cacheKey);
             if (cachedDataStr) {
                 const cachedData = JSON.parse(cachedDataStr);
@@ -389,13 +362,11 @@
             }
 
             try {
-                // ② 裏側でこっそりGASから最新のデータを取得
                 const response = await fetch(GAS_URL + "?userId=" + currentUserId);
                 const freshData = await response.json();
 
-                // ③ 新しいデータが前回と違う場合（誰かが追加・削除した時）だけ、画面を静かに上書きする
                 if (JSON.stringify(freshData) !== cachedDataStr) {
-                    localStorage.setItem(cacheKey, JSON.stringify(freshData)); // キャッシュを最新に更新
+                    localStorage.setItem(cacheKey, JSON.stringify(freshData));
                     renderData(freshData); 
                     hideLoading();
                 }
@@ -403,19 +374,18 @@
                 if (!cachedDataStr) {
                     document.getElementById('loading').innerText = "通信エラーが発生しました: " + error;
                 } else {
-                    console.log("バックグラウンド通信エラー:", error); // 画面は出ているのでエラーは裏ログにだけ残す
+                    console.log("バックグラウンド通信エラー:", error);
                 }
             }
         }
 
-        // ▼ 描画専用の関数（fetchDataから中身を独立させた）
         function renderData(data) {
             const listContainer = document.getElementById('memory-list');
-            listContainer.innerHTML = ''; // 画面を一旦リセット
+            listContainer.innerHTML = ''; 
             let hasPins = false;
             
             window.galleryData = {}; window.memoData = {};
-            initMap(); // 地図のピンも一旦リセットして増殖を防ぐ
+            initMap(); 
 
             for (let i = data.length - 1; i > 0; i--) {
                 const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || "";
@@ -474,7 +444,6 @@
                 cardHtml += `<div class="btn-container">`;
                 if (latStr && lngStr) {
                     cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map">📍 マップ</button>`;
-                    // ※ナビ開始ボタンのリンクに古いバグ（0{latStr}）があったので、ついでに直しておいたぞ！
                     cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=${latStr},${lngStr}" target="_blank" class="btn btn-nav">🧭 ナビ開始</a>`;
                 }
                 cardHtml += `<button onclick="openEditModal('${date}')" class="btn btn-edit">📝 メモ</button>`;
@@ -486,11 +455,10 @@
             if (hasPins && map) { map.fitBounds(bounds); }
         }
         
-        // ▼▼ 追加：メモ欄をタップした時に、画面の中央まで引き上げる魔法 ▼▼
         document.getElementById('memo-input').addEventListener('focus', function() {
             setTimeout(() => {
                 this.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300); // キーボードが下から上がりきるのを0.3秒待ってからスクロール！
+            }, 300); 
         });
 
         async function main() { 
