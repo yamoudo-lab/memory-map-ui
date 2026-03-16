@@ -139,10 +139,13 @@
         }
         function focusMap(lat, lng) { if (map && lat && lng) { map.panTo({lat: parseFloat(lat), lng: parseFloat(lng)}); map.setZoom(14); } }
 
-        // ★修正：エラーの原因だった余計なif文を消してクリーンにした関数
-        function triggerAppendPhoto(dateStr) { 
+        function triggerAppendCamera(dateStr) { 
             currentAppendDate = dateStr; 
-            document.getElementById('append-photo-trigger').click(); 
+            document.getElementById('append-camera-trigger').click(); 
+        }
+        function triggerAppendFolder(dateStr) { 
+            currentAppendDate = dateStr; 
+            document.getElementById('append-folder-trigger').click(); 
         }
 
         async function handleAppendPhotos(event) {
