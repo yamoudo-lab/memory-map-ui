@@ -154,7 +154,30 @@
         }
         function focusMap(lat, lng) { if (map && lat && lng) { map.panTo({lat: parseFloat(lat), lng: parseFloat(lng)}); map.setZoom(14); } }
 
-        function triggerAppendPhoto(dateStr) { currentAppendDate = dateStr; document.getElementById('append-photo-trigger').click(); }
+        async function triggerAppendPhoto(dateStr) { 
+            currentAppendDate = dateStr; 
+            
+            const result = await Swal.fire({
+                title: '写真の追加',
+                text: 'どちらの方法で追加しますか？',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '📷 カメラで撮影',
+                denyButtonText: '📁 フォルダから',
+                cancelButtonText: 'キャンセル',
+                confirmButtonColor: '#06C755',
+                denyButtonColor: '#1565C0',
+                reverseButtons: true
+            });
+
+            if (result.isConfirmed) {
+                // カメラを選択した場合
+                document.getElementById('append-camera-trigger').click();
+            } else if (result.isDenied) {
+                // フォルダを選択した場合
+                document.getElementById('append-photo-trigger').click();
+            }
+        }
 
         async function handleAppendPhotos(event) {
             const files = Array.from(event.target.files);
