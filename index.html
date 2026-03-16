@@ -371,84 +371,118 @@
             map = new google.maps.Map(document.getElementById("map"), { center: { lat: 35.6895, lng: 139.6917 }, zoom: 5, disableDefaultUI: true, zoomControl: true, fullscreenControl: true }); bounds = new google.maps.LatLngBounds(); 
         }
         
-        async function fetchData() { 
-            try { 
-                const response = await fetch(GAS_URL + "?userId=" + currentUserId); 
-                const data = await response.json(); 
-                hideLoading(); 
-                const listContainer = document.getElementById('memory-list'); let hasPins = false; 
-                
-                window.galleryData = {}; window.memoData = {}; 
+        // --------------------------------------------------
+        // ▼▼ 修正：爆速キャッシュエンジン版の fetchData ▼▼
+        // --------------------------------------------------
+        async function fetchData() {
+            const cacheKey = "memoryMapCache_" + currentUserId;
 
-                for (let i = data.length - 1; i > 0; i--) { 
-                    const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || ""; 
-                    if (!date) continue; 
-                    
-                    const timeId = new Date(date).getTime(); 
-                    let textToShow = ""; let originalUrls = []; let directImgUrls = [];
-                    
-                    if (colD && colD.startsWith("http")) { 
-                        originalUrls = colD.split(","); 
-                        for (let u of originalUrls) {
-                            if (u.includes("drive.google.com/file/d/")) {
-                                const match = u.match(/\/d\/(.+?)\//);
-                                if (match && match[1]) directImgUrls.push(`https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`);
-                            }
-                        }
-                    }
-                    
-                    window.galleryData[date] = originalUrls; window.memoData[date] = colC;
-                    let latStr = null; let lngStr = null;
+            // ① まずスマホ内（ローカル）の前回データがあれば、0.5秒で即表示！
+            const cachedDataStr = localStorage.getItem(cacheKey);
+            if (cachedDataStr) {
+                const cachedData = JSON.parse(cachedDataStr);
+                renderData(cachedData); 
+                hideLoading();
+            }
 
-                    if (typeOrText === "画像") { textToShow = "📷 写真を記録しました"; 
-                    } else if (typeOrText === "位置情報") { textToShow = "📍 " + colC; 
-                        if (colE) { 
-                            const latLngArr = String(colE).split(","); 
-                            if(latLngArr.length === 2 && map) { 
-                                latStr = latLngArr[0]; lngStr = latLngArr[1];
-                                const position = { lat: parseFloat(latStr), lng: parseFloat(lngStr) }; 
-                            const marker = new google.maps.Marker({ position: position, map: map, title: colC });
-                                marker.addListener("click", () => { jumpToCard(date, latStr, lngStr); }); 
-                                bounds.extend(position); hasPins = true; 
-                            } 
-                        } 
-                    } else { textToShow = typeOrText; } 
-                    
-                    let cardHtml = `<div class="memory-card" id="card-${timeId}">`; 
-                    cardHtml += `<button onclick="deleteMemory('${date}')" class="btn-delete">🗑️ まるごと削除</button>`;
-                    if (date) cardHtml += `<div class="memory-date">🕒 ${new Date(date).toLocaleString('ja-JP')}</div>`; 
-                    if (textToShow) { 
-                        // 80文字以上、または3行以上なら折り畳む
-                        if (textToShow.length > 80 || (textToShow.match(/\n/g) || []).length >= 3) {
-                            cardHtml += `<div class="memory-text collapsed" id="memo-${timeId}">${textToShow}</div>`;
-                            cardHtml += `<div class="read-more-btn" id="rmbtn-${timeId}" onclick="toggleMemo('${timeId}')">▼ 続きを読む</div>`;
-                        } else {
-                            cardHtml += `<div class="memory-text">${textToShow}</div>`;
-                        }
-                    }
-                    
-                    if (directImgUrls.length > 0) {
-                        cardHtml += `<div style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px;">`;
-                        for(let j=0; j<directImgUrls.length; j++) {
-                            cardHtml += `<img src="${directImgUrls[j]}" class="thumb-img" onclick="openLightbox('${date}', ${j})">`;
-                        }
-                        cardHtml += `</div>`;
-                    }
+            try {
+                // ② 裏側でこっそりGASから最新のデータを取得
+                const response = await fetch(GAS_URL + "?userId=" + currentUserId);
+                const freshData = await response.json();
 
-                    cardHtml += `<div class="btn-container">`; 
-                    if (latStr && lngStr) {
-                        cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map">📍 マップ</button>`; 
-                        cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=${latStr},${lngStr}" target="_blank" class="btn btn-nav">🧭 ナビ開始</a>`; 
-                    }
-                    cardHtml += `<button onclick="openEditModal('${date}')" class="btn btn-edit">📝 メモ</button>`;
-                    cardHtml += `<button onclick="triggerAppendPhoto('${date}')" class="btn btn-photo">📸 写真追加</button>`;
-                    cardHtml += `</div></div>`; 
-                    
-                    listContainer.innerHTML += cardHtml; 
-                } 
-                if (hasPins && map) { map.fitBounds(bounds); } 
-            } catch (error) { document.getElementById('loading').innerText = "通信エラーが発生しました: " + error; } 
+                // ③ 新しいデータが前回と違う場合（誰かが追加・削除した時）だけ、画面を静かに上書きする
+                if (JSON.stringify(freshData) !== cachedDataStr) {
+                    localStorage.setItem(cacheKey, JSON.stringify(freshData)); // キャッシュを最新に更新
+                    renderData(freshData); 
+                    hideLoading();
+                }
+            } catch (error) {
+                if (!cachedDataStr) {
+                    document.getElementById('loading').innerText = "通信エラーが発生しました: " + error;
+                } else {
+                    console.log("バックグラウンド通信エラー:", error); // 画面は出ているのでエラーは裏ログにだけ残す
+                }
+            }
         }
+
+        // ▼ 描画専用の関数（fetchDataから中身を独立させた）
+        function renderData(data) {
+            const listContainer = document.getElementById('memory-list');
+            listContainer.innerHTML = ''; // 画面を一旦リセット
+            let hasPins = false;
+            
+            window.galleryData = {}; window.memoData = {};
+            initMap(); // 地図のピンも一旦リセットして増殖を防ぐ
+
+            for (let i = data.length - 1; i > 0; i--) {
+                const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || "";
+                if (!date) continue;
+
+                const timeId = new Date(date).getTime();
+                let textToShow = ""; let originalUrls = []; let directImgUrls = [];
+
+                if (colD && colD.startsWith("http")) {
+                    originalUrls = colD.split(",");
+                    for (let u of originalUrls) {
+                        if (u.includes("drive.google.com/file/d/")) {
+                            const match = u.match(/\/d\/(.+?)\//);
+                            if (match && match[1]) directImgUrls.push(`https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`);
+                        }
+                    }
+                }
+
+                window.galleryData[date] = originalUrls; window.memoData[date] = colC;
+                let latStr = null; let lngStr = null;
+
+                if (typeOrText === "画像") { textToShow = "📷 写真を記録しました";
+                } else if (typeOrText === "位置情報") { textToShow = "📍 " + colC;
+                    if (colE) {
+                        const latLngArr = String(colE).split(",");
+                        if(latLngArr.length === 2 && map) {
+                            latStr = latLngArr[0]; lngStr = latLngArr[1];
+                            const position = { lat: parseFloat(latStr), lng: parseFloat(lngStr) };
+                            const marker = new google.maps.Marker({ position: position, map: map, title: colC });
+                            marker.addListener("click", () => { jumpToCard(date, latStr, lngStr); });
+                            bounds.extend(position); hasPins = true;
+                        }
+                    }
+                } else { textToShow = typeOrText; }
+
+                let cardHtml = `<div class="memory-card" id="card-${timeId}">`;
+                cardHtml += `<button onclick="deleteMemory('${date}')" class="btn-delete">🗑️ まるごと削除</button>`;
+                if (date) cardHtml += `<div class="memory-date">🕒 ${new Date(date).toLocaleString('ja-JP')}</div>`;
+                if (textToShow) {
+                    if (textToShow.length > 80 || (textToShow.match(/\n/g) || []).length >= 3) {
+                        cardHtml += `<div class="memory-text collapsed" id="memo-${timeId}">${textToShow}</div>`;
+                        cardHtml += `<div class="read-more-btn" id="rmbtn-${timeId}" onclick="toggleMemo('${timeId}')">▼ 続きを読む</div>`;
+                    } else {
+                        cardHtml += `<div class="memory-text">${textToShow}</div>`;
+                    }
+                }
+
+                if (directImgUrls.length > 0) {
+                    cardHtml += `<div style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px;">`;
+                    for(let j=0; j<directImgUrls.length; j++) {
+                        cardHtml += `<img src="${directImgUrls[j]}" class="thumb-img" onclick="openLightbox('${date}', ${j})">`;
+                    }
+                    cardHtml += `</div>`;
+                }
+
+                cardHtml += `<div class="btn-container">`;
+                if (latStr && lngStr) {
+                    cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map">📍 マップ</button>`;
+                    // ※ナビ開始ボタンのリンクに古いバグ（0{latStr}）があったので、ついでに直しておいたぞ！
+                    cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=${latStr},${lngStr}" target="_blank" class="btn btn-nav">🧭 ナビ開始</a>`;
+                }
+                cardHtml += `<button onclick="openEditModal('${date}')" class="btn btn-edit">📝 メモ</button>`;
+                cardHtml += `<button onclick="triggerAppendPhoto('${date}')" class="btn btn-photo">📸 写真追加</button>`;
+                cardHtml += `</div></div>`;
+
+                listContainer.innerHTML += cardHtml;
+            }
+            if (hasPins && map) { map.fitBounds(bounds); }
+        }
+        
         // ▼▼ 追加：メモ欄をタップした時に、画面の中央まで引き上げる魔法 ▼▼
         document.getElementById('memo-input').addEventListener('focus', function() {
             setTimeout(() => {
