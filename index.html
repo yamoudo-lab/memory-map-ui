@@ -446,8 +446,7 @@
                     cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=${latStr},${lngStr}" target="_blank" class="btn btn-nav">🧭 ナビ開始</a>`;
                 }
                 cardHtml += `<button onclick="openEditModal('${date}')" class="btn btn-edit">📝 メモ</button>`;
-                cardHtml += `<button onclick="triggerAppendCamera('${date}')" class="btn btn-photo" style="background-color: #FCE4EC; color: #C2185B;">📸 カメラ</button>`;
-                cardHtml += `<button onclick="triggerAppendFolder('${date}')" class="btn btn-photo">📁 フォルダ</button>`;
+                cardHtml += `<button onclick="triggerAppendPhoto('${date}')" class="btn btn-photo">📸 写真追加</button>`;
                 cardHtml += `</div></div>`;
 
                 listContainer.innerHTML += cardHtml;
