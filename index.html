@@ -157,15 +157,6 @@
             currentAppendDate = dateStr; 
             document.getElementById('append-photo-trigger').click(); 
         }
-            
-            if (result.isConfirmed) {
-                // カメラを選択した場合
-                document.getElementById('append-camera-trigger').click();
-            } else if (result.isDenied) {
-                // フォルダを選択した場合
-                document.getElementById('append-photo-trigger').click();
-            }
-        }
 
         async function handleAppendPhotos(event) {
             const files = Array.from(event.target.files);
