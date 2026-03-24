@@ -185,7 +185,6 @@
             try {
                 let uploadedUrls = [];
                 for (let i = 0; i < files.length; i++) {
-                    // Firebaseなら1600pxの高画質でも余裕で速い！
                     let blob = await compressImageToBlob(files[i], 1024, 1024, 0.75);
                     let filename = `append_${Date.now()}_${i}.jpg`;
                     let storageRef = storage.ref(`images/${currentUserId}/${filename}`);
