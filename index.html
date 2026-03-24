@@ -322,26 +322,59 @@
             }
             
             const btn = document.querySelector('#input-modal .btn-submit'); 
-            btn.innerText = "Uploading to Firebase..."; btn.disabled = true; 
+            btn.innerText = "Uploading..."; btn.disabled = true; 
             
             try {
                 const memoText = document.getElementById('memo-input').value; const gpsText = `${currentLat},${currentLng}`;
-                const uploadPromises = files.map(async (file, i) => {
-                let blob = await compressImageToBlob(file, 1024, 1024, 0.75);
-                let filename = `append_${Date.now()}_${i}.jpg`;
-                let storageRef = storage.ref(`images/${currentUserId}/${filename}`);
-                await storageRef.put(blob);
-                return await storageRef.getDownloadURL();
-            });
-            let uploadedUrls = await Promise.all(uploadPromises);
-
-                // GASには、取得したFirebaseのURLのリストを送るだけ！
-                const payload = { userId: currentUserId, source: "liff", memo: memoText, gps: gpsText, images: uploadedUrls };
-                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 
+                // 1. Firebaseへのアップロード（ここだけは数秒待つ）
+                const uploadPromises = stagingFiles.map(async (file, i) => {
+                    let blob = await compressImageToBlob(file, 1024, 1024, 0.75);
+                    let filename = `liff_${Date.now()}_${i}.jpg`;
+                    let storageRef = storage.ref(`images/${currentUserId}/${filename}`);
+                    await storageRef.put(blob);
+                    return await storageRef.getDownloadURL();
+                });
+                let uploadedUrls = await Promise.all(uploadPromises);
+
+                const payload = { userId: currentUserId, source: "liff", memo: memoText, gps: gpsText, images: uploadedUrls };
+
+                // ▼▼▼ 魔法の始まり：GASへの通信は「裏側」にぶん投げて、返事を待たない！ ▼▼▼
+                fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
+                    .then(() => fetch(GAS_URL + "?userId=" + currentUserId)) // POSTが終わったら裏で最新情報を取得
+                    .then(res => res.json())
+                    .then(freshData => {
+                        // 最新データが取れたら、ひっそりと画面を正式なカードに書き換える
+                        localStorage.setItem("memoryMapCache_" + currentUserId, JSON.stringify(freshData));
+                        renderData(freshData);
+                    });
+
+                // ▼▼▼ 通信を待たずに、入力画面を速攻で閉じる！ ▼▼▼
                 closeModal();
-                await Swal.fire({ title: '完了', text: '保存しました！', icon: 'success', confirmButtonColor: '#06C755' });
-                document.getElementById('memory-list').innerHTML = ''; showLoading("Loading data..."); initMap(); fetchData(); 
+                
+                // ▼▼▼ 今送信した内容で「仮のカード」を作って、一番上にねじ込む！ ▼▼▼
+                let tempCardHtml = `<div class="memory-card" style="border: 2px dashed #06C755; background: #f0fdf4;">`;
+                tempCardHtml += `<div class="memory-date" style="color:#06C755;">⏳ ただいま裏側でマップに反映中...</div>`;
+                if (memoText) tempCardHtml += `<div class="memory-text">${memoText}</div>`;
+                if (uploadedUrls.length > 0) {
+                    tempCardHtml += `<div style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px;">`;
+                    for(let j=0; j<uploadedUrls.length; j++) {
+                        tempCardHtml += `<img src="${uploadedUrls[j]}" class="thumb-img">`;
+                    }
+                    tempCardHtml += `</div>`;
+                }
+                tempCardHtml += `</div>`;
+                document.getElementById('memory-list').insertAdjacentHTML('afterbegin', tempCardHtml);
+
+                // ▼▼▼ 完了メッセージも2秒でサクッと消す ▼▼▼
+                Swal.fire({ 
+                    title: '送信完了！', 
+                    text: 'マップへの反映は裏側で行われます。', 
+                    icon: 'success', 
+                    timer: 2000, 
+                    showConfirmButton: false 
+                });
+                
             } catch (error) { 
                 Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' });
             } finally {
