@@ -326,16 +326,14 @@
             
             try {
                 const memoText = document.getElementById('memo-input').value; const gpsText = `${currentLat},${currentLng}`;
-                let uploadedUrls = [];
-                // Firebaseへ直接画像を送信！
-                for (let i = 0; i < stagingFiles.length; i++) {
-                    let blob = await compressImageToBlob(stagingFiles[i], 800, 800, 0.8);
-                    let filename = `liff_${Date.now()}_${i}.jpg`;
-                    let storageRef = storage.ref(`images/${currentUserId}/${filename}`);
-                    await storageRef.put(blob);
-                    let downloadUrl = await storageRef.getDownloadURL();
-                    uploadedUrls.push(downloadUrl); // FirebaseのURLを取得
-                }
+                const uploadPromises = files.map(async (file, i) => {
+                let blob = await compressImageToBlob(file, 1024, 1024, 0.75);
+                let filename = `append_${Date.now()}_${i}.jpg`;
+                let storageRef = storage.ref(`images/${currentUserId}/${filename}`);
+                await storageRef.put(blob);
+                return await storageRef.getDownloadURL();
+            });
+            let uploadedUrls = await Promise.all(uploadPromises);
 
                 // GASには、取得したFirebaseのURLのリストを送るだけ！
                 const payload = { userId: currentUserId, source: "liff", memo: memoText, gps: gpsText, images: uploadedUrls };
