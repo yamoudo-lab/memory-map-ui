@@ -566,6 +566,115 @@
         });
 
         async function shareMemory(dateStr) {
+            let isSelectionMode = false;
+        let selectedMemories = [];
+
+        function toggleSelectionMode() {
+            isSelectionMode = !isSelectionMode;
+            const btn = document.getElementById('mode-toggle-btn');
+            const listSection = document.getElementById('list-section');
+            const sendFab = document.getElementById('send-multiple-fab');
+            const mainFab = document.querySelector('.fab-container');
+            
+            if (isSelectionMode) {
+                btn.classList.add('active'); btn.innerText = "❌ キャンセル";
+                listSection.classList.add('selection-mode');
+                sendFab.style.display = 'block'; mainFab.style.display = 'none';
+                selectedMemories = []; updateSendFab();
+            } else {
+                btn.classList.remove('active'); btn.innerText = "☑️ 複数選択";
+                listSection.classList.remove('selection-mode');
+                sendFab.style.display = 'none'; mainFab.style.display = 'flex';
+                document.querySelectorAll('.memory-card').forEach(card => card.classList.remove('selected'));
+                document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = false);
+                selectedMemories = [];
+            }
+        }
+
+        function toggleCardSelection(dateStr, timeId) {
+            if (!isSelectionMode) return;
+            const card = document.getElementById(`card-${timeId}`);
+            const checkbox = document.getElementById(`cb-${timeId}`);
+            
+            const index = selectedMemories.indexOf(dateStr);
+            if (index === -1) {
+                if (selectedMemories.length >= 10) {
+                    Swal.fire({ title: '上限到達', text: 'LINEの仕様上、一度に送れるのは10件までだ。', icon: 'warning', confirmButtonColor: '#06C755' });
+                    return;
+                }
+                selectedMemories.push(dateStr);
+                card.classList.add('selected'); checkbox.checked = true;
+            } else {
+                selectedMemories.splice(index, 1);
+                card.classList.remove('selected'); checkbox.checked = false;
+            }
+            updateSendFab();
+        }
+
+        function updateSendFab() {
+            const sendFab = document.getElementById('send-multiple-fab');
+            if (selectedMemories.length > 0) {
+                sendFab.innerText = `📤 ${selectedMemories.length}件をLINEで送る`;
+                sendFab.style.opacity = "1"; sendFab.style.pointerEvents = "auto";
+            } else {
+                sendFab.innerText = `📤 スポットを選択...`;
+                sendFab.style.opacity = "0.5"; sendFab.style.pointerEvents = "none";
+            }
+        }
+
+        async function shareSelectedMemories() {
+            if (selectedMemories.length === 0) return;
+            if (!liff.isApiAvailable('shareTargetPicker')) {
+                Swal.fire({ title: 'エラー', text: 'この環境では共有機能が使えません。', icon: 'error', confirmButtonColor: '#06C755' });
+                return;
+            }
+
+            // 次のフェーズで使う「選択したピンだけのマップを開く」ための特殊なURLパラメータを仕込む
+            const timeIds = selectedMemories.map(d => new Date(d).getTime()).join(',');
+            const shareUrl = `https://liff.line.me/2009431992-aQfZHA0X?filter=${timeIds}`;
+
+            // 選択されたデータから、カルーセル用のカード（Bubble）の配列を錬成する
+            const bubbles = selectedMemories.map(dateStr => {
+                const urls = window.galleryData[dateStr];
+                const rawMemo = window.memoData[dateStr] || "";
+                // メモが長すぎるとLINE側でエラーになるため切り詰める
+                const memoText = rawMemo.length > 40 ? rawMemo.substring(0, 40) + "..." : (rawMemo || "Memory Map スポット");
+                const imageUrl = (urls && urls.length > 0) ? urls[0] : "https://koransha.com/images/noimage.png"; 
+
+                return {
+                    type: "bubble",
+                    size: "micro", // 横並びに適したコンパクトサイズ
+                    hero: { type: "image", url: imageUrl, size: "full", aspectRatio: "4:3", aspectMode: "cover" },
+                    body: {
+                        type: "box", layout: "vertical", paddingAll: "10px",
+                        contents: [ { type: "text", text: memoText, weight: "bold", size: "sm", wrap: true, maxLines: 2 } ]
+                    },
+                    footer: {
+                        type: "box", layout: "vertical", spacing: "sm", paddingAll: "10px",
+                        contents: [ { type: "button", style: "primary", color: "#06C755", height: "sm", action: { type: "uri", label: "このマップを見る", uri: shareUrl } } ]
+                    }
+                };
+            });
+
+            const flexMessage = {
+                type: "flex",
+                altText: `${selectedMemories.length}件のおすすめスポットが届きました`,
+                contents: {
+                    type: "carousel", // ここでカルーセル（横スワイプ）を指定
+                    contents: bubbles
+                }
+            };
+
+            try {
+                const res = await liff.shareTargetPicker([flexMessage]);
+                if (res) {
+                    Swal.fire({ title: '送信完了', text: 'リストを共有しました。', icon: 'success', timer: 2000, showConfirmButton: false });
+                    toggleSelectionMode(); // 送信後は元の画面に戻す
+                }
+            } catch (error) {
+                console.error("Share target picker failed", error);
+            }
+        }
             // LIFF環境でShare Target Pickerが使えるかチェック
             if (!liff.isApiAvailable('shareTargetPicker')) {
                 Swal.fire({ title: 'エラー', text: 'この環境では共有機能が使えません。', icon: 'error', confirmButtonColor: '#06C755' });
