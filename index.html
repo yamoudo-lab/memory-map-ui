@@ -532,6 +532,7 @@
                 }
                 cardHtml += `<button onclick="openEditModal('${date}')" class="btn btn-edit">📝 メモ</button>`;
                 cardHtml += `<button onclick="triggerAppendPhoto('${date}')" class="btn btn-photo">📸 写真追加</button>`;
+                cardHtml += `<button onclick="shareMemory('${date}')" class="btn btn-share">📤 LINEで送る</button>`;
                 cardHtml += `</div></div>`;
 
                 listContainer.innerHTML += cardHtml;
