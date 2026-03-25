@@ -85,11 +85,12 @@
         .memory-text.collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 5px; }
         .read-more-btn { color: #06C755; font-size: 0.85rem; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: inline-block; }
 
-        /* ▼▼▼ 複数選択モード用のスタイル ▼▼▼ */
-        .select-checkbox { display: none; position: absolute; top: 15px; left: 15px; width: 24px; height: 24px; z-index: 5; cursor: pointer; accent-color: #06C755; }
+        /* ▼▼▼ 複数選択モード用のスタイル（日付も一緒にズラす） ▼▼▼ */
+        .select-checkbox { display: none; position: absolute; top: 20px; left: 15px; width: 22px; height: 22px; z-index: 5; cursor: pointer; accent-color: #06C755; }
         .selection-mode .select-checkbox { display: block; pointer-events: none; }
-        .selection-mode .memory-card { padding-left: 50px; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
-        .selection-mode .memory-card.selected { border: 2px solid #06C755; background-color: #f0fdf4; }
+        .selection-mode .memory-card { padding-left: 50px; cursor: pointer; background-color: #f0fdf4; }
+        .selection-mode .memory-card.selected { border: 2px solid #06C755; }
+        .selection-mode .memory-date { left: 50px; } /* ←★ここがミソ。押し出されるように日付も右へスライドする */
         
         /* 複数選択モード時、画像とボタン類へのタップを完全に無効化。半透明で視覚的にも「押せない」ことを示す */
         .selection-mode .memory-card img.thumb-img,
