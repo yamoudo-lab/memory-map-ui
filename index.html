@@ -214,7 +214,7 @@
 
         function triggerAppendPhoto(dateStr) { 
             currentAppendDate = dateStr; 
-            document.getElementById('append-photo-trigger').click(); 
+            triggerFileInput('append-photo-trigger'); 
         }
 
         function compressImageToBlob(file, maxWidth, maxHeight, quality) {
