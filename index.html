@@ -195,6 +195,16 @@
             oldInput.parentNode.replaceChild(newInput, oldInput); // 古いものを捨てて入れ替え
             newInput.click(); // クリック発火
         }
+
+        // ▼▼▼ 死んでいる文字を「生きた導線」に変える魔法 ▼▼▼
+        function autoLink(text) {
+            if (!text) return "";
+            // 1. URLを緑色のリンクに変換
+            let linked = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: #06C755; text-decoration: underline; word-break: break-all;">$1</a>');
+            // 2. 電話番号（ハイフンあり）をタップ可能な電話リンクに変換
+            linked = linked.replace(/(0\d{1,4}-\d{1,4}-\d{3,4})/g, '<a href="tel:$1" style="color: #06C755; text-decoration: underline;">$1</a>');
+            return linked;
+        }
         
         function toggleMemo(id) {
             const textDiv = document.getElementById(`memo-${id}`);
