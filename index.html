@@ -360,7 +360,7 @@
                 modalMap = new google.maps.Map(document.getElementById("modal-map"), { center: pos, zoom: 17, mapTypeControl: false, streetViewControl: false, fullscreenControl: false, gestureHandling: "greedy" });
                 modalMap.addListener('dragend', () => {
                     const center = modalMap.getCenter(); currentLat = center.lat(); currentLng = center.lng();
-                    const statusText = document.getElementById('gps-status'); statusText.innerText = "✍️ 手動で場所を設定中"; statusText.style.color = "#FF9800";
+                    const statusText = document.getElementById('gps-status'); statusText.innerText = "手動で場所を設定中"; statusText.style.color = "#FF9800";
                 });
             } else { modalMap.setCenter(pos); }
         }
@@ -371,7 +371,7 @@
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
                         currentLat = position.coords.latitude; currentLng = position.coords.longitude;
-                        statusText.innerText = isRecenter ? "🎯 現在地に戻りました" : "✅ 現在地を取得しました"; statusText.style.color = "#06C755"; initModalMap(currentLat, currentLng);
+                        statusText.innerText = isRecenter ? "現在地に戻りました" : "✅ 現在地を取得しました"; statusText.style.color = "#06C755"; initModalMap(currentLat, currentLng);
                     },
                     function(error) {
                         statusText.innerText = "❌ 取得失敗。地図を動かして場所を決めてください。"; statusText.style.color = "red";
