@@ -586,10 +586,11 @@
                     cardHtml += `</div>`;
                 }
 
+                // 【マップ・ナビボタン】
                 cardHtml += `<div class="btn-container">`;
                 if (latStr && lngStr) {
-                    cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map">📍 マップ</button>`;
-                    cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=$${latStr},${lngStr}" target="_blank" class="btn btn-nav">🧭 ナビ開始</a>`;
+                    cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map"><span class="material-symbols-outlined">place</span>マップ</button>`;
+                    cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=$${latStr},${lngStr}" target="_blank" class="btn btn-nav"><span class="material-symbols-outlined">directions_car</span>ナビ開始</a>`;
                 }
                 
                 // ▼ ゲストモードの時は 編集・写真追加・再共有ボタン を隠す
