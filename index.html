@@ -386,6 +386,30 @@
             currentLat = null; currentLng = null; stagingFiles = []; renderPreviews();
         }
 
+        // ▼▼▼ ①カメラ表示消失対策: ファイル入力タグをリセット（再生成）する魔法 ▼▼▼
+        function resetFileInput(inputId) {
+            const container = document.getElementById('file-input-container');
+            const oldInput = document.getElementById(inputId);
+            if (!oldInput) return;
+
+            // 新しいinputタグをクローン
+            const newInput = oldInput.cloneNode(true); 
+            newInput.value = ""; // 値をリセット
+
+            // 古いものを削除し、新しいものを追加
+            container.replaceChild(newInput, oldInput);
+
+            // クローンするとイベントリスナーが消えるので、再度セットする
+            newInput.addEventListener('change', (event) => {
+                // ここで既存のハンドラを呼び出す
+                if (inputId === 'add-more-trigger' || inputId === 'main-trigger') {
+                    handleDirectFiles(event);
+                } else if (inputId === 'append-photo-trigger') {
+                    handleAppendPhotos(event);
+                }
+            });
+        }
+
         function renderPreviews() {
             const grid = document.getElementById('preview-grid'); grid.innerHTML = ''; 
             stagingFiles.forEach((file, index) => {
