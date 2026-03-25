@@ -561,6 +561,7 @@
                             const position = { lat: parseFloat(latStr), lng: parseFloat(lngStr) };
                             const marker = new google.maps.Marker({ position: position, map: map, title: colC });
                             marker.addListener("click", () => { jumpToCard(date, latStr, lngStr); });
+                            markers.push(marker);
                             bounds.extend(position); hasPins = true;
                         }
                     }
