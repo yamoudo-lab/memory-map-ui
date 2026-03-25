@@ -637,17 +637,19 @@
                 cardHtml += `<div class="btn-container">`;
                 if (latStr && lngStr) {
                     cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map"><span class="material-symbols-outlined">place</span>マップ</button>`;
-                    // ▼▼ ナビのURLを世界標準の正しいものに修正済み ▼▼
-                    cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=${latStr},${lngStr}" target="_blank" class="btn btn-nav"><span class="material-symbols-outlined">directions_car</span>ナビ開始</a>`;
+                    cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=$${latStr},${lngStr}" target="_blank" class="btn btn-nav"><span class="material-symbols-outlined">directions_car</span>ナビ開始</a>`;
                 }
                 
                 if (!isSharedMode) {
                     cardHtml += `<button onclick="openEditModal('${date}')" class="btn btn-edit"><span class="material-symbols-outlined">edit_note</span>メモ</button>`;
                     cardHtml += `<button onclick="triggerAppendPhoto('${date}')" class="btn btn-photo"><span class="material-symbols-outlined">add_a_photo</span>写真追加</button>`;
                     cardHtml += `<button onclick="shareMemory('${date}')" class="btn btn-share">LINEで送る</button>`;
+                } else {
+                    // ▼▼▼ ゲストモード（共有された側）の時だけ、インポートボタンを出す！ ▼▼▼
+                    cardHtml += `<button onclick="importMemory('${date}', '${latStr}', '${lngStr}')" class="btn" style="background-color: #FFF3E0; color: #E65100; border-color: #FFCC80;"><span class="material-symbols-outlined">download</span>自分のマップに保存</button>`;
                 }
                 
-                cardHtml += `</div></div>`; // ←★★★ ここが復活した！ ★★★
+                cardHtml += `</div></div>`;
                 
                 listContainer.innerHTML += cardHtml;
             }
