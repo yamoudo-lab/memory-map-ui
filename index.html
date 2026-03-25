@@ -803,11 +803,18 @@
                         // ▼ ゲストモード時の見た目
                         document.querySelector('.fab-container').style.display = 'none';
                         const modeBtn = document.getElementById('mode-toggle-btn');
-                        modeBtn.innerHTML = `<span class="material-symbols-outlined">map</span>共有マップ`;
-                        modeBtn.style.backgroundColor = "#FFF3E0";
-                        modeBtn.style.color = "#E65100";
-                        modeBtn.style.borderColor = "#E65100";
-                        modeBtn.style.pointerEvents = "none";
+                        
+                        // ▼▼▼ 右上のボタンを「自分のマップへ」という強力な導線に書き換える ▼▼▼
+                        modeBtn.innerHTML = `<span class="material-symbols-outlined">home</span>自分のマップへ`;
+                        modeBtn.style.backgroundColor = "#06C755"; /* LINEグリーンで目立たせる */
+                        modeBtn.style.color = "white";
+                        modeBtn.style.borderColor = "#06C755";
+                        modeBtn.style.pointerEvents = "auto"; /* クリック可能にする */
+                        
+                        // ボタンを押したら、共有パラメータ（uid等）の無い「素のTACK」へ強制ワープ！
+                        modeBtn.onclick = function() {
+                            window.location.href = "https://liff.line.me/2009431992-aQfZHA0X";
+                        };
                     }
 
                     fetchData(); 
