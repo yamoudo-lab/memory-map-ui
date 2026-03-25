@@ -235,6 +235,7 @@
             });
         }
 
+        // ▼▼▼ この関数を丸ごと書き換え ▼▼▼
         async function handleAppendPhotos(event) {
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
@@ -242,28 +243,62 @@
                 Swal.fire({ title: '注意', text: '一度に追加できるのは5枚までです！', icon: 'warning', confirmButtonColor: '#06C755' });
                 return; 
             }
-            showLoading("Uploading to Firebase..."); 
+            
+            // 1. 先に画面（UI）に仮の画像を表示して安心させる（楽観的UI）
+            const timeId = new Date(currentAppendDate).getTime();
+            const cardElement = document.getElementById('card-' + timeId);
+            if (cardElement) {
+                // 画像を入れるコンテナを探すか、無ければ作る
+                let imgContainer = cardElement.querySelector('div[style*="overflow-x: auto"]');
+                if (!imgContainer) {
+                    imgContainer = document.createElement('div');
+                    imgContainer.style.cssText = "display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px;";
+                    // テキストの次、ボタンの前に挿入
+                    const btnContainer = cardElement.querySelector('.btn-container');
+                    cardElement.insertBefore(imgContainer, btnContainer);
+                }
+                // 選んだファイルを仮表示
+                files.forEach(file => {
+                    const tempImg = document.createElement('img');
+                    tempImg.className = 'thumb-img';
+                    tempImg.style.border = "2px dashed #06C755"; // 仮アップロード中とわかるように枠をつける
+                    tempImg.src = URL.createObjectURL(file);
+                    imgContainer.appendChild(tempImg);
+                });
+            }
+
+            // サクッとメッセージだけ出す（待たせない！）
+            Swal.fire({ title: 'アップロード開始', text: '裏側で保存しています...', icon: 'info', timer: 1500, showConfirmButton: false });
+            document.getElementById('append-photo-trigger').value = '';
+
+            // 2. 裏側でFirebaseアップロードとGAS送信を実行
             try {
                 const uploadPromises = files.map(async (file, i) => {
                     let blob = await compressImageToBlob(file, 1024, 1024, 0.75);
                     let filename = `append_${Date.now()}_${i}.jpg`;
-                    let storageRef = storage.ref(`images/${currentUserId}/${filename}`);
+                    let storageRef = storage.ref(`images/${targetUserId}/${filename}`);
                     await storageRef.put(blob);
                     return await storageRef.getDownloadURL();
                 });
                 let uploadedUrls = await Promise.all(uploadPromises);
-                const payload = { userId: targetUserId, action: "appendImage", date: currentAppendDate, images: uploadedUrls };
-                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 
-                await Swal.fire({ title: '完了', text: '写真を追加しました！', icon: 'success', confirmButtonColor: '#06C755' });
-                document.getElementById('append-photo-trigger').value = '';
-                document.getElementById('memory-list').innerHTML = ''; showLoading("Loading data..."); fetchData(); 
+                const payload = { userId: targetUserId, action: "appendImage", date: currentAppendDate, images: uploadedUrls };
+                
+                // 送信して、終わったら静かに最新データを取得して再描画
+                fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
+                    .then(() => fetch(GAS_URL + "?userId=" + targetUserId)) 
+                    .then(res => res.json())
+                    .then(freshData => {
+                        localStorage.setItem("memoryMapCache_" + targetUserId, JSON.stringify(freshData));
+                        renderData(freshData); // ここで枠線なしの正式な画像にすり替わる
+                    });
+
             } catch (error) { 
-                Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' });
-                hideLoading(); 
+                console.error("Append Error", error);
+                Swal.fire({ title: 'エラー', text: '写真の追加に失敗しました。', icon: 'error', confirmButtonColor: '#06C755' });
             }
         }
-
+        
         function openEditModal(dateStr) { currentEditDate = dateStr; document.getElementById('edit-memo-input').value = window.memoData[dateStr] || ""; document.getElementById('edit-modal').style.display = 'flex'; }
         function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; document.getElementById('edit-memo-input').value = ""; }
         
