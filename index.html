@@ -794,16 +794,18 @@
 
                 return {
                     type: "bubble",
-                    size: "micro", 
+                    size: "micro",
+                    // ▼ ① カード全体をタップした時のワープ先を設定 ▼
+                    action: { type: "uri", label: "開く", uri: shareUrl },
                     hero: { type: "image", url: imageUrl, size: "full", aspectRatio: "4:3", aspectMode: "cover" },
                     body: {
                         type: "box", layout: "vertical", paddingAll: "10px",
-                        contents: [ { type: "text", text: memoText, weight: "bold", size: "sm", wrap: true, maxLines: 2 } ]
-                    },
-                    footer: {
-                        type: "box", layout: "vertical", spacing: "sm", paddingAll: "10px",
-                        contents: [ { type: "button", style: "primary", color: "#06C755", height: "sm", action: { type: "uri", label: "このマップを見る", uri: shareUrl } } ]
+                        contents: [ 
+                            // ▼ ② ボタンが消えた分、テキストを2行から4行へ拡張 ▼
+                            { type: "text", text: memoText, weight: "bold", size: "sm", wrap: true, maxLines: 4 } 
+                        ]
                     }
+                    // ▼ ③ footerブロック（緑のボタン）は丸ごと削除 ▼
                 };
             });
 
