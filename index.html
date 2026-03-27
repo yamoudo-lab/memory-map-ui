@@ -169,6 +169,12 @@
         firebase.initializeApp(firebaseConfig);
         const storage = firebase.storage();
 
+        const db = firebase.firestore();
+        const cloudFunc = firebase.functions();
+        
+        let currentPinCount = 0; // 現在のピン数をカウント
+        let isPremium = false;   // 課金ユーザーかどうかのフラグ
+
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxS4N8TrRihDFQJnNMjbiKYUTtCEIkX0rBqTpbxVkzUBidv-CcSi-Ym-TU9EtfPxY18/exec";
         
         let map; let bounds; let currentLat = null; let currentLng = null;
