@@ -289,7 +289,7 @@
                     try {
                         const createCheckoutSession = cloudFunc.httpsCallable('createCheckoutSession');
                         // 明示的に最新のIDを詰め込む
-                        const response = await createCheckoutSession({ userId: currentUserId });
+                        const response = await createCheckoutSession({ userId: currentUserId, uid: currentUserId });
                         
                         if (response && response.data && response.data.url) {
                             window.location.href = response.data.url;
