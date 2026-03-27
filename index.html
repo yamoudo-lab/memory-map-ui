@@ -248,67 +248,59 @@
             }
         }
 
-        // ▼▼▼ 魔法2：20ピン制限とStripe決済への誘導（絶対防壁） ▼▼▼
         async function checkPinLimitAndTrigger(inputId) {
             if (isSharedMode) {
-                Swal.fire({ title: 'ゲストモード', text: 'ここは他の人のマップです。右上のボタンから自分のマップへ戻ってピンを立てましょう。', icon: 'info', confirmButtonColor: '#06C755' });
+                Swal.fire({ title: 'ゲストモード', text: 'ここは他の人のマップです。', icon: 'info' });
                 return;
             }
 
-            // 現在のピン数をカウント（data配列の長さ - 1(ヘッダー分)）
-            // ※既存の localStorage キャッシュか GASのデータから計算
+            // ★ 最後の手段：もしIDが空なら、この瞬間に再取得を試みる
+            if (!currentUserId && liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                currentUserId = profile.userId;
+            }
+
             const cachedDataStr = localStorage.getItem("memoryMapCache_" + currentUserId);
             if (cachedDataStr) {
                 const data = JSON.parse(cachedDataStr);
-                // 空行やヘッダーを除いた実質的なピン数を計算
                 currentPinCount = data.filter(row => row[0] !== "" && row[0] !== "日付").length;
             }
 
-            // 防壁発動条件：プレミアムではなく、かつ20ピン以上の場合
             if (!isPremium && currentPinCount >= 20) {
                 const result = await Swal.fire({
                     title: '📌 マップの限界に到達',
-                    html: `無料プランで記録できるピン（20個）を使い切りました。<br><br><b>TACK Premium（月額300円）</b>にアップグレードすると、制限が完全に解除され、あなたの世界を無限に広げることができます。`,
+                    html: `無料プランの20個を使い切りました。<br><br><b>TACK Premium</b>へアップグレードしますか？`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#06C755',
-                    cancelButtonColor: '#9e9e9e',
                     confirmButtonText: '🚀 アップグレードする',
                     cancelButtonText: '今はやめる',
                     heightAuto: false
                 });
 
                 if (result.isConfirmed) {
-                    // ★ 防弾仕様：もしLINEのIDが取得できていなければ、ここで通信を止める
+                    // ★ ここでIDがなければ絶対に中止する
                     if (!currentUserId) {
-                        Swal.fire({ title: '認証エラー', text: 'LINEのIDが認識されていません。TACKを一度閉じて開き直してください。', icon: 'error', confirmButtonColor: '#06C755' });
+                        Swal.fire({ title: '認証エラー', text: 'LINE IDを取得できませんでした。アプリを再起動してください。', icon: 'error' });
                         return;
                     }
 
                     showLoading("決済画面へ安全に接続中...");
                     try {
                         const createCheckoutSession = cloudFunc.httpsCallable('createCheckoutSession');
+                        // 明示的に最新のIDを詰め込む
+                        const response = await createCheckoutSession({ userId: currentUserId });
                         
-                        // ▼ 警備員に確実にID（パスポート）を渡す
-                        const payload = { userId: currentUserId };
-                        const response = await createCheckoutSession(payload);
-                        
-                        // ▼ StripeからURLが正常に返ってきたか確認してワープ
                         if (response && response.data && response.data.url) {
                             window.location.href = response.data.url;
-                        } else {
-                            throw new Error("Stripeから決済URLが発行されませんでした。");
                         }
                     } catch (error) {
                         hideLoading();
-                        Swal.fire({ title: '通信エラー', text: '詳細: ' + error.message, icon: 'error', confirmButtonColor: '#06C755' });
-                        console.error("Checkout Error:", error);
+                        Swal.fire({ title: 'エラー', text: '詳細: ' + error.message, icon: 'error' });
                     }
                 }
-                return; // ここで処理を止め、ファイル選択画面は出さない
+                return;
             }
-
-            // 制限に引っかからなかった場合のみ、本来のカメラ/ファイル選択を起動
             triggerFileInput(inputId);
         }
 
