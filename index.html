@@ -282,8 +282,8 @@
                     showLoading("決済画面へ安全に接続中...");
                     try {
                         const createCheckoutSession = cloudFunc.httpsCallable('createCheckoutSession');
-                        const response = await createCheckoutSession();
-                        // 取得したStripeの決済URLへユーザーを強制ワープ
+                        // ▼ LINEのユーザーID（currentUserId）を持たせてバックエンドを呼び出す ▼
+                        const response = await createCheckoutSession({ userId: currentUserId });
                         window.location.href = response.data.url;
                     } catch (error) {
                         hideLoading();
