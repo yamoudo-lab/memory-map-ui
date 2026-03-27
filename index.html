@@ -236,6 +236,67 @@
             triggerFileInput('append-photo-trigger'); 
         }
 
+        // ▼▼▼ 魔法1：ユーザーの課金状態を確認する ▼▼▼
+        async function checkPremiumStatus(uid) {
+            try {
+                const doc = await db.collection("users").doc(uid).get();
+                if (doc.exists && doc.data().isPremium === true) {
+                    isPremium = true;
+                }
+            } catch (error) {
+                console.log("Premium check failed:", error);
+            }
+        }
+
+        // ▼▼▼ 魔法2：20ピン制限とStripe決済への誘導（絶対防壁） ▼▼▼
+        async function checkPinLimitAndTrigger(inputId) {
+            if (isSharedMode) {
+                Swal.fire({ title: 'ゲストモード', text: 'ここは他の人のマップです。右上のボタンから自分のマップへ戻ってピンを立てましょう。', icon: 'info', confirmButtonColor: '#06C755' });
+                return;
+            }
+
+            // 現在のピン数をカウント（data配列の長さ - 1(ヘッダー分)）
+            // ※既存の localStorage キャッシュか GASのデータから計算
+            const cachedDataStr = localStorage.getItem("memoryMapCache_" + currentUserId);
+            if (cachedDataStr) {
+                const data = JSON.parse(cachedDataStr);
+                // 空行やヘッダーを除いた実質的なピン数を計算
+                currentPinCount = data.filter(row => row[0] !== "" && row[0] !== "日付").length;
+            }
+
+            // 防壁発動条件：プレミアムではなく、かつ20ピン以上の場合
+            if (!isPremium && currentPinCount >= 20) {
+                const result = await Swal.fire({
+                    title: '📌 マップの限界に到達',
+                    html: `無料プランで記録できるピン（20個）を使い切りました。<br><br><b>TACK Premium（月額300円）</b>にアップグレードすると、制限が完全に解除され、あなたの世界を無限に広げることができます。`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#06C755',
+                    cancelButtonColor: '#9e9e9e',
+                    confirmButtonText: '🚀 アップグレードする',
+                    cancelButtonText: '今はやめる'
+                });
+
+                if (result.isConfirmed) {
+                    showLoading("決済画面へ安全に接続中...");
+                    try {
+                        const createCheckoutSession = cloudFunc.httpsCallable('createCheckoutSession');
+                        const response = await createCheckoutSession();
+                        // 取得したStripeの決済URLへユーザーを強制ワープ
+                        window.location.href = response.data.url;
+                    } catch (error) {
+                        hideLoading();
+                        Swal.fire({ title: 'エラー', text: '決済画面の準備に失敗しました。時間をおいて再試行してください。', icon: 'error', confirmButtonColor: '#06C755' });
+                        console.error("Checkout Error:", error);
+                    }
+                }
+                return; // ここで処理を止め、ファイル選択画面は出さない
+            }
+
+            // 制限に引っかからなかった場合のみ、本来のカメラ/ファイル選択を起動
+            triggerFileInput(inputId);
+        }
+
         function compressImageToBlob(file, maxWidth, maxHeight, quality) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
