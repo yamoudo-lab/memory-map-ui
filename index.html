@@ -260,17 +260,9 @@
             }
         }
 
-        async function checkPinLimitAndTrigger(inputId) {
-            if (isSharedMode) {
-                Swal.fire({ title: 'ゲストモード', text: 'ここは他の人のマップです。', icon: 'info' });
-                return;
-            }
-
-            // ▼▼▼ 追加：いつでもプレミアムへワープできる専用の扉 ▼▼▼
         async function triggerUpgrade() {
             if (isSharedMode) return;
 
-            // IDが空なら念のため再取得
             if (!currentUserId && liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 currentUserId = profile.userId;
@@ -296,7 +288,6 @@
                 showLoading("決済画面へ安全に接続中...");
                 try {
                     const createCheckoutSession = cloudFunc.httpsCallable('createCheckoutSession');
-                    // フロントからバックエンドへIDを送信
                     const response = await createCheckoutSession({ userId: currentUserId, uid: currentUserId });
                     
                     if (response && response.data && response.data.url) {
@@ -308,6 +299,12 @@
                 }
             }
         }
+
+        async function checkPinLimitAndTrigger(inputId) {
+            if (isSharedMode) {
+                Swal.fire({ title: 'ゲストモード', text: 'ここは他の人のマップです。', icon: 'info' });
+                return;
+            }
             
             // ★ 最後の手段：もしIDが空なら、この瞬間に再取得を試みる
             if (!currentUserId && liff.isLoggedIn()) {
