@@ -750,6 +750,9 @@
             markers.forEach(marker => marker.setMap(null));
             markers = []; 
 
+            // ◀◀ 追加：描画したカードの数を数えるカウンター
+            let cardCounter = 0; 
+
             for (let i = data.length - 1; i > 0; i--) {
                 const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || "";
                 if (!date) continue;
