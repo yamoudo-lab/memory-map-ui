@@ -254,6 +254,49 @@
                 return;
             }
 
+            // ▼▼▼ 追加：いつでもプレミアムへワープできる専用の扉 ▼▼▼
+        async function triggerUpgrade() {
+            if (isSharedMode) return;
+
+            // IDが空なら念のため再取得
+            if (!currentUserId && liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                currentUserId = profile.userId;
+            }
+
+            const result = await Swal.fire({
+                title: '👑 TACK Premium',
+                html: `この広告を完全に非表示にし、<br>マップの拡張を<b>無制限</b>にします。<br><br>アップグレードしますか？`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#06C755',
+                confirmButtonText: '🚀 アップグレードする',
+                cancelButtonText: '今はやめる',
+                heightAuto: false
+            });
+
+            if (result.isConfirmed) {
+                if (!currentUserId) {
+                    Swal.fire({ title: '認証エラー', text: 'LINE IDを取得できませんでした。アプリを再起動してください。', icon: 'error' });
+                    return;
+                }
+
+                showLoading("決済画面へ安全に接続中...");
+                try {
+                    const createCheckoutSession = cloudFunc.httpsCallable('createCheckoutSession');
+                    // フロントからバックエンドへIDを送信
+                    const response = await createCheckoutSession({ userId: currentUserId, uid: currentUserId });
+                    
+                    if (response && response.data && response.data.url) {
+                        window.location.href = response.data.url;
+                    }
+                } catch (error) {
+                    hideLoading();
+                    Swal.fire({ title: 'エラー', text: '詳細: ' + error.message, icon: 'error' });
+                }
+            }
+        }
+            
             // ★ 最後の手段：もしIDが空なら、この瞬間に再取得を試みる
             if (!currentUserId && liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
