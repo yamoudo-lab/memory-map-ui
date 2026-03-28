@@ -830,10 +830,9 @@
                 
                 cardHtml += `</div></div>`;
                 listContainer.innerHTML += cardHtml;
-            }
-            // ▼▼▼ ここから追加：広告（ノイズ）の自動挿入ロジック ▼▼▼
+
+                // ▼▼▼ ここから追加：広告（ノイズ）の自動挿入ロジック ▼▼▼
                 cardCounter++;
-                // 無料ユーザー かつ 自分のマップ かつ 3ピンごとに1回
                 if (!isPremium && !isSharedMode && cardCounter % 3 === 0) {
                     let adHtml = `
                     <div class="memory-card" style="background: #f8f9fa; border: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px 20px; box-shadow: none;">
@@ -844,6 +843,10 @@
                     </div>`;
                     listContainer.innerHTML += adHtml;
                 }
+                // ▲▲▲ ここまで追加 ▲▲▲
+
+            } // ◀◀ ⭕️ 広告の処理が終わった「後」でループを閉じる！
+
             if (hasPins && map) { map.fitBounds(bounds); }
         }
         
