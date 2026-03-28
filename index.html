@@ -260,24 +260,21 @@
             }
         }
 
+        // ▼▼▼ このブロックで丸ごと上書きする ▼▼▼
         async function triggerUpgrade() {
             if (isSharedMode) return;
 
-            if (!currentUserId && liff.isLoggedIn()) {
-                const profile = await liff.getProfile();
-                currentUserId = profile.userId;
-            }
-
-            const result = await Swal.fire({
+            // 【寸止め装置】Stripeへは飛ばさず、期待感だけを煽る
+            Swal.fire({
                 title: '👑 TACK Premium',
-                html: `この広告を完全に非表示にし、<br>マップの拡張を<b>無制限</b>にします。<br><br>アップグレードしますか？`,
+                html: '現在、プレミアム機能は正式リリースに向けて<br><b>最終準備中</b>です！<br><br>もうしばらくお待ちください🚀',
                 icon: 'info',
-                showCancelButton: true,
-                confirmButtonColor: '#06C755',
-                confirmButtonText: '🚀 アップグレードする',
-                cancelButtonText: '今はやめる',
+                confirmButtonColor: '#06C755', // TACKのブランドカラー
+                confirmButtonText: '楽しみに待つ！',
                 heightAuto: false
             });
+        }
+        // ▲▲▲ 上書きここまで ▲▲▲
 
             if (result.isConfirmed) {
                 if (!currentUserId) {
