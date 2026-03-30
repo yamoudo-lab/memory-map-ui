@@ -217,13 +217,23 @@
             newInput.click(); // クリック発火
         }
 
-        // ▼▼▼ 死んでいる文字を「生きた導線」に変える魔法 ▼▼▼
+        // ▼▼▼ 死んでいる文字を「生きた導線」に変える魔法（裏技搭載版） ▼▼▼
         function autoLink(text) {
             if (!text) return "";
+            let linked = text;
+            
             // 1. URLを緑色のリンクに変換
-            let linked = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: #06C755; text-decoration: underline; word-break: break-all;">$1</a>');
-            // 2. 電話番号（ハイフンあり）をタップ可能な電話リンクに変換
+            linked = linked.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: #06C755; text-decoration: underline; word-break: break-all;">$1</a>');
+            
+            // 2. 電話番号をタップ可能な電話リンクに変換
             linked = linked.replace(/(0\d{1,4}-\d{1,4}-\d{3,4})/g, '<a href="tel:$1" style="color: #06C755; text-decoration: underline;">$1</a>');
+            
+            // 3. 【隠し裏技1】 **文字** で、TACKグリーンの太字ハイライト
+            linked = linked.replace(/\*\*(.*?)\*\*/g, '<span style="color: #06C755; font-weight: bold; font-size: 1.1em;">$1</span>');
+            
+            // 4. 【隠し裏技2】 !!文字!! で、現場用の赤字アラート
+            linked = linked.replace(/!!(.*?)!!/g, '<span style="color: #d32f2f; font-weight: bold; background-color: #ffebee; padding: 0 4px; border-radius: 4px;">$1</span>');
+            
             return linked;
         }
         
