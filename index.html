@@ -977,8 +977,11 @@
                         modeBtn.style.borderColor = "#06C755";
                         modeBtn.style.pointerEvents = "auto"; 
                         
+                        // ボタンを押したら、TACKの「LINE公式アカウント（友だち追加画面）」へワープ！
                         modeBtn.onclick = function() {
-                            window.location.href = "https://liff.line.me/2009431992-aQfZHA0X";
+                            // TACK公式のベーシックID（@931bwuek）を指定して、友だち追加画面を開かせる
+                            window.location.href = "https://line.me/R/ti/p/@931bwuek"; 
+                            // ※もしLINE公式の管理画面で「https://lin.ee/〜」の短い友だち追加URLを発行していれば、それに差し替えてもOKだ。
                         };
                     }
 
