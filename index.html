@@ -764,7 +764,8 @@
 
                             // 💡 Phase Shift: 『空間の揺らぎ（Jitter）』アルゴリズム
                             // 既存のピンと「約5メートル以内」に重なっているかチェック
-                            let isOverlap = usedPositions.some(p => Math.abs(p.lat - latNum) < 0.00005 && Math.abs(p.lng - lngNum) < 0.00005);
+                            // 💡 判定を「約50cm以内」に絞る。これで手動の微調整が殺されない。
+                            let isOverlap = usedPositions.some(p => Math.abs(p.lat - latNum) < 0.000005 && Math.abs(p.lng - lngNum) < 0.000005);
                             if (isOverlap) {
                                 // 重なっていたら、ランダムに5〜15メートルほど周囲に散らす
                                 latNum += (Math.random() - 0.5) * 0.0002;
