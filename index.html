@@ -854,16 +854,17 @@
 
                             const position = { lat: latNum, lng: lngNum };
                             
-                            // 💡 白縁（ホワイトアウトライン）のカスタムピンをコードで生成
+                            // 💡 雫の逆型（骨格）そのものをスリムに整形したカスタムSVG
                             const pinSvg = {
-                                path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z", // ピンの形
-                                fillColor: "#FF5252", // ピンの中身（赤）
+                                // 👈 これがぽっちゃり型を卒業した、スリムなピンの新しい骨格（SVGパス）だ！
+                                path: "M12 2C7.6 2 4 5.6 4 10c0 7 8 12 8 12s8-5 8-12C20 5.6 16.4 2 12 2zm0 13c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5z",
+                                fillColor: "#FF5252",
                                 fillOpacity: 1,
-                                strokeWeight: 1.2,    // 👈 縁の太さ
-                                strokeColor: "#FFFFFF", // 👈 ここが念願の「白縁」！
-                                scale: 1.2,            // 👈 ここで全体の大きさを微調整（1.2〜1.8くらいがおすすめ）
-                                anchor: new google.maps.Point(12, 22), // 針の先端を座標に合わせる
-                                labelOrigin: new google.maps.Point(12, 9)
+                                strokeWeight: 1.5,    // 👈 縁の太さ（1.2〜1.5くらいが小ぶりな形に合うぜ）
+                                strokeColor: "#FFFFFF",
+                                scale: 1.1,            // 👈 骨格がシュッとした分、scaleは少し小さめの「1.1」が秩序を保つ
+                                anchor: new google.maps.Point(12, 22), // 針の先端
+                                labelOrigin: new google.maps.Point(12, 10)
                             };
 
                             const marker = new google.maps.Marker({ 
