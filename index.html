@@ -809,70 +809,56 @@
             let hasPins = false;
             
             window.galleryData = {}; window.memoData = {};
-            window.cardLocations = []; // 📍追加：全カードの座標と日付を記憶する専用配列
+            window.cardLocations = []; // 📍追加：全カードの座標を記憶する専用配列
             
             if (!map) { initMap(); }
-        
             bounds = new google.maps.LatLngBounds();
             markers.forEach(marker => marker.setMap(null));
             markers = []; 
 
             let cardCounter = 0; 
-            let usedPositions = []; // 📍追加：これまでに打ったピンの座標を記憶する配列
 
             for (let i = data.length - 1; i > 0; i--) {
                 const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || "";
                 if (!date) continue;
 
-                const timeId = new Date(date).getTime();
-
-                if (isSharedMode && !filterIds.includes(String(timeId))) {
-                    continue; 
-                }
+                if (isSharedMode && !filterIds.includes(String(new Date(date).getTime()))) continue; 
 
                 let textToShow = ""; let originalUrls = []; 
-
-                if (colD && colD.startsWith("http")) {
-                    originalUrls = colD.split(",");
-                }
-
+                if (colD && colD.startsWith("http")) originalUrls = colD.split(",");
                 window.galleryData[date] = originalUrls; window.memoData[date] = colC;
                 let latStr = null; let lngStr = null;
 
                 if (typeOrText === "画像") { textToShow = "📷 写真を記録しました";
-                // ...（iのループの途中、colEの処理から）
                 } else if (typeOrText === "位置情報") { textToShow = "📍 " + colC;
                     if (colE) {
                         const latLngArr = String(colE).split(",");
                         if(latLngArr.length === 2 && map) {
                             latStr = latLngArr[0]; lngStr = latLngArr[1];
-                            
                             let latNum = parseFloat(latStr);
                             let lngNum = parseFloat(lngStr);
                             
-                            // 📍追加：この座標が「いつのカード」か記憶しておく
+                            // 💡 視覚的吸収の防止：もし完全に重なっていたら、視認できるように少しずらして描画する
+                            let overlapCount = window.cardLocations.filter(p => Math.abs(p.lat - latNum) < 0.00002 && Math.abs(p.lng - lngNum) < 0.00002).length;
+                            if (overlapCount > 0) {
+                                latNum += 0.00008; // 吸収されないレベルで確実にズラす
+                                lngNum += 0.00008;
+                            }
+                            
+                            // 📍 この座標が「いつのカード」か記憶する
                             window.cardLocations.push({ date: date, lat: latNum, lng: lngNum });
 
                             const position = { lat: latNum, lng: lngNum };
                             const marker = new google.maps.Marker({ 
-                                position: position, 
-                                map: map, 
-                                title: colC,
-                                icon: {
-                                    path: google.maps.SymbolPath.CIRCLE,
-                                    scale: 8,
-                                    fillColor: "#FF5252",
-                                    fillOpacity: 1,
-                                    strokeWeight: 2,
-                                    strokeColor: "#FFFFFF"
-                                }
+                                position: position, map: map, title: colC,
+                                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#FF5252", fillOpacity: 1, strokeWeight: 2, strokeColor: "#FFFFFF" }
                             });
                             markers.push(marker); 
                             bounds.extend(position); hasPins = true;
-                        } // 👈 if(latLngArr.length === 2 && map) の閉じカッコ
-                    } // 👈 if (colE) の閉じカッコ
-                } else { textToShow = typeOrText; } // 👈 else if (位置情報) の閉じカッコ ＋ else 
-
+                        }
+                    }
+                } else { textToShow = typeOrText; }
+                
                 let cardHtml = `<div class="memory-card" id="card-${timeId}" ${!isSharedMode ? `onclick="if(isSelectionMode) toggleCardSelection('${date}', '${timeId}')"` : ''}>`;
                 
                 if (!isSharedMode) {
