@@ -725,8 +725,10 @@
             let hasPins = false;
             
             window.galleryData = {}; window.memoData = {};
+            window.cardLocations = []; // 📍追加：全カードの座標と日付を記憶する専用配列
             
             if (!map) { initMap(); }
+        
             bounds = new google.maps.LatLngBounds();
             markers.forEach(marker => marker.setMap(null));
             markers = []; 
@@ -761,10 +763,11 @@
                         if(latLngArr.length === 2 && map) {
                             latStr = latLngArr[0]; lngStr = latLngArr[1];
                             
-                            // 💡 正着：システム側の判定（Math.abs...）をすべて削除し、
-                            // スプレッドシートにある座標をそのまま数値化してマーカーにする
                             let latNum = parseFloat(latStr);
                             let lngNum = parseFloat(lngStr);
+                            
+                            // 📍追加：この座標が「いつのカード」か記憶しておく
+                            window.cardLocations.push({ date: date, lat: latNum, lng: lngNum });
 
                             const position = { lat: latNum, lng: lngNum };
                             const marker = new google.maps.Marker({ 
