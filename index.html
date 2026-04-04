@@ -762,16 +762,21 @@
                             let latNum = parseFloat(latStr);
                             let lngNum = parseFloat(lngStr);
 
-                            // 💡 Phase Shift: 『空間の揺らぎ（Jitter）』アルゴリズム
-                            // 既存のピンと「約5メートル以内」に重なっているかチェック
-                            // 💡 判定を「約50cm以内」に絞る。これで手動の微調整が殺されない。
-                            let isOverlap = usedPositions.some(p => Math.abs(p.lat - latNum) < 0.000005 && Math.abs(p.lng - lngNum) < 0.000005);
-                            if (isOverlap) {
-                                // 重なっていたら、ランダムに5〜15メートルほど周囲に散らす
-                                latNum += (Math.random() - 0.5) * 0.0002;
-                                lngNum += (Math.random() - 0.5) * 0.0002;
+                            // 💡 Phase Shift: 密度適応型Jitterアルゴリズム
+                            // 1. まず、極めて近い（50cm以内）にピンがあるかチェック
+                            let overlapCount = usedPositions.filter(p => 
+                                Math.abs(p.lat - latNum) < 0.000005 && 
+                                Math.abs(p.lng - lngNum) < 0.000005
+                            ).length;
+
+                            if (overlapCount > 0) {
+                                // 2. 重なっていたら、重なっている数に応じて「螺旋状」にわずかにずらす
+                                // 0.00002（約2メートル）程度の半径で、重なり順に角度を変えて配置
+                                let angle = overlapCount * (Math.PI / 3); // 60度ずつ回転
+                                latNum += Math.cos(angle) * 0.00003;
+                                lngNum += Math.sin(angle) * 0.00003;
                             }
-                            usedPositions.push({lat: latNum, lng: lngNum}); // 記憶する
+                            usedPositions.push({lat: latNum, lng: lngNum}); 
 
                             const position = { lat: latNum, lng: lngNum };
                             const marker = new google.maps.Marker({ 
