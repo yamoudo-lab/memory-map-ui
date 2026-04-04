@@ -833,16 +833,17 @@
                             let latNum = parseFloat(latStr);
                             let lngNum = parseFloat(lngStr);
                             
-                            // 💡 視覚的吸収の防止：もし完全に重なっていたら、視認できるように少しずらして描画する
-                            let overlapCount = window.cardLocations.filter(p => Math.abs(p.lat - latNum) < 0.00002 && Math.abs(p.lng - lngNum) < 0.00002).length;
+                            // 💡 視覚的吸収の完全防止：もし近いなら、地図上で明確に分離させるため「30m分」大きくズラして描画する
+                            let overlapCount = window.cardLocations.filter(p => Math.abs(p.lat - latNum) < 0.0001 && Math.abs(p.lng - lngNum) < 0.0001).length;
                             if (overlapCount > 0) {
-                                latNum += 0.00008; // 吸収されないレベルで確実にズラす
-                                lngNum += 0.00008;
+                                // 重なるたびに、円を描くように大きく配置
+                                let angle = overlapCount * (Math.PI / 3); 
+                                latNum += Math.cos(angle) * 0.0003; // 約30メートルの強力な反発力
+                                lngNum += Math.sin(angle) * 0.0003;
                             }
                             
                             // 📍 この座標が「いつのカード」か記憶する
                             window.cardLocations.push({ date: date, lat: latNum, lng: lngNum });
-
                             const position = { lat: latNum, lng: lngNum };
                             const marker = new google.maps.Marker({ 
                                 position: position, map: map, title: colC,
