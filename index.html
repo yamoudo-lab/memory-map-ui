@@ -641,12 +641,12 @@
                 return; 
             }
 
-            // 💡 Phase Shift: 過去のピンに乗せたかどうかの判定
+            // 💡 Phase Shift: 過去のピンに乗せたかどうかの判定（磁力を15mに拡大）
             let targetMergeDate = null;
             if (window.cardLocations) {
                 for (let loc of window.cardLocations) {
-                    // グレーのピンの約5メートル以内に落としたかチェック
-                    if (Math.abs(loc.lat - currentLat) < 0.00005 && Math.abs(loc.lng - currentLng) < 0.00005) {
+                    // 判定範囲を 0.00015（約15m）に拡大。少しズレても「結合の意志」として拾う
+                    if (Math.abs(loc.lat - currentLat) < 0.00015 && Math.abs(loc.lng - currentLng) < 0.00015) {
                         targetMergeDate = loc.date;
                         break; 
                     }
@@ -667,13 +667,12 @@
                 });
 
                 if (res.isConfirmed) {
-                    // 【結合モード】過去のカードに追記して終了
                     await executeMerge(targetMergeDate);
                     return; 
                 } else {
-                    // 【分離モード】新しく作る場合、視覚的な「吸収」を防ぐために座標を強制的に弾き飛ばす
-                    currentLat += 0.0001;
-                    currentLng -= 0.0001;
+                    // 【分離モード】あえて新しく作る場合、視覚的な「吸収」を絶対に防ぐため、30mほど強制的に弾き飛ばす
+                    currentLat += 0.0003;
+                    currentLng -= 0.0003;
                 }
             }
 
