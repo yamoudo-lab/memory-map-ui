@@ -855,13 +855,13 @@
                             // ✂️ ここからコピー（847行目付近の const marker = ... の部分を上書き）
                     const position = { lat: latNum, lng: lngNum };
                     
-                    // 💡 雫の骨格と中心円はスリムなまま、縁を「黒」に反転
+                    // 💡 輪郭を「深い赤」に。馴染みつつ締まる、大人のスリムピン。
                             const pinSvg = {
                                 path: "M12 2C7.6 2 4 5.6 4 10c0 7 8 12 8 12s8-5 8-12C20 5.6 16.4 2 12 2zm0 11.5c-2 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z",
-                                fillColor: "#FF5252",
+                                fillColor: "#FF5252",   // 中心は鮮やかな赤
                                 fillOpacity: 1,
-                                strokeWeight: 1.0,    // 👈 縁を細い「1.0」に
-                                strokeColor: "#000000", // 👈 ついに帰還した「黒縁」
+                                strokeWeight: 1.5,      // 👈 少しだけ太さを持たせて「深み」を見せる
+                                strokeColor: "#A00000", // 👈 これが「深い赤」。黒より柔らかく、白より硬い。
                                 scale: 1.1,            
                                 anchor: new google.maps.Point(12, 22), 
                                 labelOrigin: new google.maps.Point(12, 10)
