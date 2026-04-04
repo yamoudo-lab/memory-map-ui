@@ -592,6 +592,52 @@
             }
         }
 
+        // 🛠 空間的結合（Spatial Merge）を実行する専用エンジン
+        async function executeMerge(targetDate) {
+            const btn = document.querySelector('#input-modal .btn-submit'); 
+            btn.innerText = "Merging..."; btn.disabled = true; 
+            
+            try {
+                let uploadedUrls = [];
+                if (stagingFiles.length > 0) {
+                    const uploadPromises = stagingFiles.map(async (file, i) => {
+                        let blob = await compressImageToBlob(file, 1024, 1024, 0.75);
+                        let filename = `append_${Date.now()}_${i}.jpg`;
+                        let storageRef = storage.ref(`images/${currentUserId}/${filename}`);
+                        await storageRef.put(blob);
+                        return await storageRef.getDownloadURL();
+                    });
+                    uploadedUrls = await Promise.all(uploadPromises);
+                }
+
+                // 写真があれば追記（appendImageアクション）
+                if (uploadedUrls.length > 0) {
+                    const payload = { userId: targetUserId, action: "appendImage", date: targetDate, images: uploadedUrls };
+                    await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                }
+
+                // メモに入力があれば、過去のメモに追記（updateアクション）
+                const memoText = document.getElementById('memo-input').value;
+                if (memoText) {
+                    const oldMemo = window.memoData[targetDate] || "";
+                    const newMemo = oldMemo ? oldMemo + "\n\n" + memoText : memoText;
+                    const memoPayload = { userId: targetUserId, action: "update", date: targetDate, newMemo: newMemo };
+                    await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(memoPayload) });
+                }
+
+                closeModal();
+                Swal.fire({ title: '結合完了！', text: '過去のカードに追加しました。', icon: 'success', timer: 2000, showConfirmButton: false });
+                
+                // データを再読み込みして画面を更新
+                fetchData();
+
+            } catch (error) { 
+                Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' });
+            } finally {
+                btn.innerText = "送信する"; btn.disabled = false;
+            }
+        }
+
         async function submitData() {
             if (modalMap) { currentLat = modalMap.getCenter().lat(); currentLng = modalMap.getCenter().lng(); }
             if (!currentLat || !currentLng) { 
