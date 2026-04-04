@@ -798,13 +798,14 @@
             }
         }
 
+        // ✂️ ここからコピー ✂️
         function renderData(data) {
             const listContainer = document.getElementById('memory-list');
             listContainer.innerHTML = ''; 
             let hasPins = false;
             
             window.galleryData = {}; window.memoData = {};
-            window.cardLocations = []; // 📍追加：全カードの座標を記憶する専用配列
+            window.cardLocations = []; 
             
             if (!map) { initMap(); }
             bounds = new google.maps.LatLngBounds();
@@ -817,15 +818,19 @@
                 const row = data[i]; const date = row[0]; const typeOrText = row[1]; const colC = row[2] || ""; const colD = row[3] || ""; const colE = row[4] || "";
                 if (!date) continue;
 
-                if (isSharedMode && !filterIds.includes(String(new Date(date).getTime()))) continue; 
+                const timeId = new Date(date).getTime();
+
+                if (isSharedMode && !filterIds.includes(String(timeId))) continue; 
 
                 let textToShow = ""; let originalUrls = []; 
                 if (colD && colD.startsWith("http")) originalUrls = colD.split(",");
                 window.galleryData[date] = originalUrls; window.memoData[date] = colC;
                 let latStr = null; let lngStr = null;
 
-                if (typeOrText === "画像") { textToShow = "📷 写真を記録しました";
-                } else if (typeOrText === "位置情報") { textToShow = "📍 " + colC;
+                if (typeOrText === "画像") { 
+                    textToShow = "📷 写真を記録しました";
+                } else if (typeOrText === "位置情報") { 
+                    textToShow = "📍 " + colC;
                     if (colE) {
                         const latLngArr = String(colE).split(",");
                         if(latLngArr.length === 2 && map) {
@@ -833,17 +838,16 @@
                             let latNum = parseFloat(latStr);
                             let lngNum = parseFloat(lngStr);
                             
-                            // 💡 視覚的吸収の完全防止：もし近いなら、地図上で明確に分離させるため「30m分」大きくズラして描画する
+                            // 💡 視覚的吸収の防止（約30mずらす）
                             let overlapCount = window.cardLocations.filter(p => Math.abs(p.lat - latNum) < 0.0001 && Math.abs(p.lng - lngNum) < 0.0001).length;
                             if (overlapCount > 0) {
-                                // 重なるたびに、円を描くように大きく配置
                                 let angle = overlapCount * (Math.PI / 3); 
-                                latNum += Math.cos(angle) * 0.0003; // 約30メートルの強力な反発力
+                                latNum += Math.cos(angle) * 0.0003; 
                                 lngNum += Math.sin(angle) * 0.0003;
                             }
                             
-                            // 📍 この座標が「いつのカード」か記憶する
                             window.cardLocations.push({ date: date, lat: latNum, lng: lngNum });
+
                             const position = { lat: latNum, lng: lngNum };
                             const marker = new google.maps.Marker({ 
                                 position: position, map: map, title: colC,
@@ -853,8 +857,10 @@
                             bounds.extend(position); hasPins = true;
                         }
                     }
-                } else { textToShow = typeOrText; }
-                
+                } else { 
+                    textToShow = typeOrText; 
+                }
+
                 let cardHtml = `<div class="memory-card" id="card-${timeId}" ${!isSharedMode ? `onclick="if(isSelectionMode) toggleCardSelection('${date}', '${timeId}')"` : ''}>`;
                 
                 if (!isSharedMode) {
@@ -883,8 +889,7 @@
                 cardHtml += `<div class="btn-container">`;
                 if (latStr && lngStr) {
                     cardHtml += `<button onclick="focusMap(${latStr}, ${lngStr})" class="btn btn-map"><span class="material-symbols-outlined">place</span>マップ</button>`;
-                    // ✅ バグ修正3：ナビゲーションのURLを正常なGoogle Mapsフォーマットに修復
-                    cardHtml += `<a href="https://www.google.com/maps/dir/?api=1&destination=${latStr},${lngStr}" target="_blank" class="btn btn-nav"><span class="material-symbols-outlined">directions_car</span>ナビ開始</a>`;
+                    cardHtml += `<a href="http://maps.google.com/maps?q=${latStr},${lngStr}" target="_blank" class="btn btn-nav"><span class="material-symbols-outlined">directions_car</span>ナビ開始</a>`;
                 }
                 
                 if (!isSharedMode) {
@@ -920,6 +925,7 @@
                 }
             }
         }
+// ✂️ ここまでコピー ✂️
         
         document.getElementById('memo-input').addEventListener('focus', function() {
             setTimeout(() => {
