@@ -853,25 +853,23 @@
                             window.cardLocations.push({ date: date, lat: latNum, lng: lngNum });
 
                             const position = { lat: latNum, lng: lngNum };
-                            const marker = new google.maps.Marker({ 
-                                position: position, 
-                                map: map, 
+                            const marker = new google.maps.Marker({
+                                position: position,
+                                map: map,
                                 title: colC,
-                                // 💡 ピンのサイズをカスタマイズ（標準は 27x43 くらい）
                                 icon: {
-                                    url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png", // 標準の赤ピン画像
-                                    scaledSize: new google.maps.Size(32, 32) // 👈 ここでサイズ調整（32x32で少し小ぶりに）
+                                    url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                                    scaledSize: new google.maps.Size(32, 32)
                                 }
                             });
 
-                            // タップ連動機能も忘れずにセット
-                            marker.addListener("click", () => { 
-                                jumpToCard(date, latStr, lngStr); 
+                            marker.addListener("click", () => {
+                                jumpToCard(date, latStr, lngStr);
                             });
 
-                            markers.push(marker); 
+                            markers.push(marker);
                             bounds.extend(position); hasPins = true;
-                        }
+                        } // 👈 874行目、ここまでのカッコを含めて消す
                     }
                 } else { 
                     textToShow = typeOrText; 
