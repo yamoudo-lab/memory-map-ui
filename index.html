@@ -852,21 +852,25 @@
                             
                             window.cardLocations.push({ date: date, lat: latNum, lng: lngNum });
 
-                           const position = { lat: latNum, lng: lngNum };
+                            const position = { lat: latNum, lng: lngNum };
                             const marker = new google.maps.Marker({ 
                                 position: position, 
                                 map: map, 
-                                title: colC
-                                // 💡 アイコン指定を削除してデフォルトの赤いピンに戻し、当たり判定を復活させる
+                                title: colC,
+                                // 💡 ピンのサイズをカスタマイズ（標準は 27x43 くらい）
+                                icon: {
+                                    url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png", // 標準の赤ピン画像
+                                    scaledSize: new google.maps.Size(32, 32) // 👈 ここでサイズ調整（32x32で少し小ぶりに）
+                                }
                             });
 
-                            // ⚡️ 重要：ピンをタップしたら下のカードにジャンプする機能を再接続
+                            // タップ連動機能も忘れずにセット
                             marker.addListener("click", () => { 
                                 jumpToCard(date, latStr, lngStr); 
                             });
 
                             markers.push(marker); 
-                            bounds.extend(position); hasPins = true; 
+                            bounds.extend(position); hasPins = true;
                         }
                     }
                 } else { 
