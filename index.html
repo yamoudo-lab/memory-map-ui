@@ -426,6 +426,63 @@
         }
 
         async function deleteSingleImage() {
+            const result = await Swal.fire({
+                title: '写真の切断', 
+                text: "この写真1枚だけを削除しますか？", 
+                icon: 'warning',
+                showCancelButton: true, 
+                confirmButtonColor: '#ff5252', 
+                cancelButtonColor: '#06C755', 
+                confirmButtonText: '削除する', 
+                cancelButtonText: 'やめる'
+            });
+            if (!result.isConfirmed) return;
+
+            const targetUrl = window.galleryData[currentLbDate][currentLbIndex]; 
+            closeLightbox(); 
+            
+            // 📌 システムの記憶に「このURLは現在抹消中」と刻印する
+            if (!deletingUrls.includes(targetUrl)) {
+                deletingUrls.push(targetUrl);
+            }
+            
+            const timeId = new Date(currentLbDate).getTime();
+            const cardElement = document.getElementById('card-' + timeId);
+            
+            if (cardElement) {
+                const images = cardElement.querySelectorAll('img.thumb-img');
+                images.forEach(img => {
+                    if (img.src === targetUrl) { 
+                        img.classList.add('deleting'); 
+                    }
+                });
+            }
+
+            try {
+                const payload = { userId: targetUserId, action: "deleteImage", date: currentLbDate, imageUrl: targetUrl };
+                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                
+                const res = await fetch(GAS_URL + "?userId=" + targetUserId);
+                const freshData = await res.json();
+                localStorage.setItem("memoryMapCache_" + targetUserId, JSON.stringify(freshData));
+                
+                // 📌 抹消が完了したら、記憶から外して再描画
+                deletingUrls = deletingUrls.filter(url => url !== targetUrl);
+                renderData(freshData); 
+
+                Swal.fire({ title: '切断完了', icon: 'success', timer: 1000, showConfirmButton: false });
+            } catch (error) { 
+                console.error("Delete Error", error);
+                // 📌 失敗した場合も記憶から外し、赤枠を解除する
+                deletingUrls = deletingUrls.filter(url => url !== targetUrl);
+                if (cardElement) {
+                    const images = cardElement.querySelectorAll('img.thumb-img');
+                    images.forEach(img => {
+                        if (img.src === targetUrl) img.classList.remove('deleting');
+                    });
+                }
+            }
+        }
         
         function initModalMap(lat, lng) {
             document.getElementById('modal-map-container').style.display = 'block'; 
