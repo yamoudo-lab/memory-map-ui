@@ -464,7 +464,7 @@
             document.getElementById('lb-delete-btn').style.display = isSharedMode ? 'none' : 'inline-flex';
         }
 
-        // ✅ 単発削除の赤枠ロック
+        // ✅ 単発削除の即時物理破壊ロック
         async function deleteSingleImage() {
             const result = await Swal.fire({
                 title: '写真の切断', 
@@ -481,10 +481,7 @@
             const targetUrl = window.galleryData[currentLbDate][currentLbIndex]; 
             closeLightbox(); 
             
-            // 📌 システムの記憶に「このURLは現在抹消中」と刻印する
-            if (!deletingUrls.includes(targetUrl)) {
-                deletingUrls.push(targetUrl);
-            }
+            if (!deletingUrls.includes(targetUrl)) deletingUrls.push(targetUrl);
             
             const timeId = new Date(currentLbDate).getTime();
             const cardElement = document.getElementById('card-' + timeId);
@@ -492,9 +489,7 @@
             if (cardElement) {
                 const images = cardElement.querySelectorAll('img.thumb-img');
                 images.forEach(img => {
-                    if (img.src === targetUrl) { 
-                        img.classList.add('deleting'); 
-                    }
+                    if (img.src === targetUrl) img.classList.add('deleting'); 
                 });
             }
 
@@ -502,14 +497,30 @@
                 const payload = { userId: targetUserId, action: "deleteImage", date: currentLbDate, imageUrl: targetUrl };
                 await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                 
-                const res = await fetch(GAS_URL + "?userId=" + targetUserId);
-                const freshData = await res.json();
-                localStorage.setItem("memoryMapCache_" + targetUserId, JSON.stringify(freshData));
-                
-                // 📌 抹消が完了したら記憶から外して再描画
-                deletingUrls = deletingUrls.filter(url => url !== targetUrl);
-                renderData(freshData); 
+                // 📌 Phase Shift: 幽霊化を防ぐため、画面上から対象の画像を「即時」かつ「物理的」に消滅させる
+                if (cardElement) {
+                    const images = cardElement.querySelectorAll('img.thumb-img');
+                    images.forEach(img => {
+                        if (img.src === targetUrl) {
+                            img.style.transition = "opacity 0.3s ease, transform 0.3s ease, width 0.3s ease, margin 0.3s ease";
+                            img.style.opacity = "0";
+                            img.style.transform = "scale(0)";
+                            img.style.width = "0px";
+                            img.style.margin = "0px";
+                            img.style.border = "none";
+                            setTimeout(() => img.remove(), 300); // 完全にDOMから削り取る
+                        }
+                    });
+                }
 
+                // 裏側で最新データを取得し、ローカルキャッシュだけを更新（再描画はしない）
+                fetch(GAS_URL + "?userId=" + targetUserId)
+                    .then(res => res.json())
+                    .then(freshData => {
+                        localStorage.setItem("memoryMapCache_" + targetUserId, JSON.stringify(freshData));
+                    });
+
+                deletingUrls = deletingUrls.filter(url => url !== targetUrl);
                 Swal.fire({ title: '切断完了', icon: 'success', timer: 1000, showConfirmButton: false });
             } catch (error) { 
                 console.error("Delete Error", error);
