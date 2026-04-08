@@ -636,7 +636,7 @@
                 // 📌 Payloadに currentInputLayer を追加
                 const payload = { userId: targetUserId, source: "liff", memo: memoText, gps: gpsText, images: uploadedUrls, layer: currentInputLayer };
 
-                // 裏側で通信開始
+                // 通信開始
                 fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
                     .then(() => fetch(GAS_URL + "?userId=" + targetUserId)).then(res => res.json())
                     .then(freshData => { localStorage.setItem("memoryMapCache_" + targetUserId, JSON.stringify(freshData)); renderData(freshData); });
@@ -646,7 +646,7 @@
                 // 📌 Phase Shift: 失われていた「即時反映ダミーカード」の復活とレイヤー色の適用
                 let tempCardHtml = `<div class="memory-card" style="border: 2px dashed #06C755; background: #f0fdf4;">`;
                 tempCardHtml += `<div class="layer-dot ${currentInputLayer}"></div>`;
-                tempCardHtml += `<div class="memory-date" style="color:#06C755;">⏳ ただいま空間に反映中...</div>`;
+                tempCardHtml += `<div class="memory-date" style="color:#06C755;">⏳ ただいま反映中...</div>`;
                 if (memoText) tempCardHtml += `<div class="memory-text">${autoLink(memoText)}</div>`;
                 if (uploadedUrls.length > 0) {
                     tempCardHtml += `<div style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px;">`;
@@ -658,12 +658,12 @@
                 tempCardHtml += `</div>`;
                 document.getElementById('memory-list').insertAdjacentHTML('afterbegin', tempCardHtml);
 
-                Swal.fire({ title: '送信完了！', text: 'マップへの反映は裏側で行われます。', icon: 'success', timer: 2000, showConfirmButton: false });
+                Swal.fire({ title: '送信完了！', text: 'マップへの反映が行われます。', icon: 'success', timer: 2000, showConfirmButton: false });
                 
             } catch (error) { Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' }); } finally { btn.innerText = "送信する"; btn.disabled = false; }
         }
         async function deleteMemory(dateStr) {
-            const result = await Swal.fire({ title: '空間からの消去', text: "このデータを完全に削除しますか？", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ff5252', cancelButtonColor: '#06C755', confirmButtonText: '削除する', cancelButtonText: 'やめる' });
+            const result = await Swal.fire({ title: '消去', text: "このデータを完全に削除しますか？", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ff5252', cancelButtonColor: '#06C755', confirmButtonText: '削除する', cancelButtonText: 'やめる' });
             if (!result.isConfirmed) return;
 
             const timeId = new Date(dateStr).getTime(); const cardElement = document.getElementById('card-' + timeId);
