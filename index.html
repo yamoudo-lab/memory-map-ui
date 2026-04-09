@@ -447,30 +447,56 @@
             } catch (error) { Swal.fire({ title: 'エラー', text: '写真の追加に失敗しました。', icon: 'error', confirmButtonColor: '#06C755' }); }
         }
 
-        function openEditModal(dateStr) { 
-            currentEditDate = dateStr; 
-            document.getElementById('edit-memo-input').value = window.memoData[dateStr] || ""; 
-            
-            // 📌 既存のレイヤー色を復元
-            let savedLayer = window.layerData[dateStr] || "red";
-            if(savedLayer === "default" || savedLayer === "") savedLayer = "red";
-            selectLayer('edit', savedLayer);
-            
-            document.getElementById('edit-modal').style.display = 'flex'; 
-        }
-        function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; }
-        
         async function submitEdit() {
-            const newMemoText = document.getElementById('edit-memo-input').value; closeEditModal(); showLoading("Saving..."); 
-            try {
-                // 📌 編集ペイロードに新しいレイヤー情報を含める
-                const payload = { userId: targetUserId, action: "update", date: currentEditDate, newMemo: newMemoText, layer: currentEditLayer };
-                await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+            const newMemoText = document.getElementById('edit-memo-input').value; 
+            const targetLayer = currentEditLayer; // 選択されたレイヤーを退避
+            closeEditModal(); 
+            
+            // 📌 Phase Shift: 画面を止めず、対象のカードだけを「即時更新（オレンジ）」状態へ移行
+            const timeId = new Date(currentEditDate).getTime();
+            const cardElement = document.getElementById('card-' + timeId);
+            
+            if (cardElement) {
+                cardElement.classList.add('updating'); // オレンジの破線と背景を適用
+                const dateEl = cardElement.querySelector('.memory-date');
+                if (dateEl) dateEl.innerHTML = `<span style="color:#FFA000;">⏳ ただいま更新中...</span>`;
                 
-                await Swal.fire({ title: '完了', text: 'メモを保存しました！', icon: 'success', confirmButtonColor: '#06C755' });
-                document.getElementById('memory-list').innerHTML = ''; showLoading("Loading data..."); 
-                await fetchData(); 
-            } catch (error) { Swal.fire({ title: 'エラー', text: '更新エラー: ' + error, icon: 'error', confirmButtonColor: '#06C755' }); hideLoading(); }
+                // レイヤードットの色を即時仮反映
+                const dotEl = cardElement.querySelector('.layer-dot');
+                if (dotEl) dotEl.className = `layer-dot ${targetLayer}`;
+                
+                // メモのテキストを即時仮反映
+                const textEl = cardElement.querySelector('.memory-text');
+                if (textEl) {
+                    textEl.innerHTML = autoLink(newMemoText);
+                } else if (newMemoText) {
+                    // もともとメモが空だった場合、新たに要素を差し込む
+                    const btnContainer = cardElement.querySelector('.btn-container');
+                    const newTextDiv = document.createElement('div');
+                    newTextDiv.className = 'memory-text';
+                    newTextDiv.innerHTML = autoLink(newMemoText);
+                    cardElement.insertBefore(newTextDiv, btnContainer);
+                }
+            }
+
+            try {
+                // 📌 Payloadに新しいテキストとレイヤー情報をセット
+                const payload = { userId: targetUserId, action: "update", date: currentEditDate, newMemo: newMemoText, layer: targetLayer };
+                
+                // 画面を止めずに裏側でGASへ送信
+                fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
+                    .then(() => fetch(GAS_URL + "?userId=" + targetUserId)).then(res => res.json())
+                    .then(freshData => { 
+                        localStorage.setItem("memoryMapCache_" + targetUserId, JSON.stringify(freshData)); 
+                        renderData(freshData); // 保存完了後、正式なカードとして再描画
+                    });
+                
+                // ローディング画面の代わりに、邪魔にならないトースト通知を出す
+                Swal.fire({ title: '更新完了！', text: '裏側で変更を定着させています。', icon: 'success', timer: 2000, showConfirmButton: false });
+            } catch (error) { 
+                Swal.fire({ title: 'エラー', text: '更新エラー: ' + error, icon: 'error', confirmButtonColor: '#06C755' }); 
+                if (cardElement) cardElement.classList.remove('updating'); 
+            }
         }
 
         function openLightbox(dateStr, index) { 
