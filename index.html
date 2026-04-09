@@ -770,13 +770,14 @@
                 cardHtml += `</div></div>`; listContainer.innerHTML += cardHtml; cardCounter++;
             }
 
-            if (hasPins && map && isInitialMapLoad) { 
+            if (hasPins && map && !isInitialMapLoad) { 
                 if (markers.length === 1) { map.setCenter(markers[0].getPosition()); map.setZoom(15); } 
                 else { map.fitBounds(bounds); } 
-                isInitialMapLoad = false;
             }
-        
-        function initMap(initialLat = 35.6895, initialLng = 139.6917, initialZoom = 5) { 
+            isInitialMapLoad = false;
+        } // ← ★この「}」で renderData 関数を確実に閉じる
+
+        function initMap(initialLat = 35.6895, initialLng = 139.6917, initialZoom = 5) {
             map = new google.maps.Map(document.getElementById("map"), { 
                 center: { lat: initialLat, lng: initialLng }, 
                 zoom: initialZoom, 
