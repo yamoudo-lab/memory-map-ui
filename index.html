@@ -773,7 +773,13 @@
             if (hasPins && map) { if (markers.length === 1) { map.setCenter(markers[0].getPosition()); map.setZoom(15); } else { map.fitBounds(bounds); } }
         }
         
-        function initMap() { map = new google.maps.Map(document.getElementById("map"), { center: { lat: 35.6895, lng: 139.6917 }, zoom: 5, disableDefaultUI: true, zoomControl: true, fullscreenControl: true }); }
+        function initMap(initialLat = 35.6895, initialLng = 139.6917, initialZoom = 5) { 
+            map = new google.maps.Map(document.getElementById("map"), { 
+                center: { lat: initialLat, lng: initialLng }, 
+                zoom: initialZoom, 
+                disableDefaultUI: true, zoomControl: true, fullscreenControl: true 
+            }); 
+        }
         
         async function fetchData() {
             const cacheKey = "memoryMapCache_" + targetUserId; const cachedDataStr = localStorage.getItem(cacheKey);
