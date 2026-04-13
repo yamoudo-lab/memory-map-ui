@@ -779,7 +779,7 @@
                 }
 
                 if (originalUrls.length > 0) {
-                    cardHtml += `<div style="display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px;">`;
+                    cardHtml += `<div style="display: flex; overflow-x: auto; gap: 6px; margin-bottom: 15px; padding-bottom: 5px;">`;
                     for(let j=0; j<originalUrls.length; j++) {
                         let imgClass = deletingUrls.includes(originalUrls[j]) ? "thumb-img deleting" : "thumb-img";
                         cardHtml += `<img src="${originalUrls[j]}" class="${imgClass}" onclick="openLightbox('${date}', ${j})">`;
