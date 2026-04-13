@@ -383,7 +383,7 @@
             } catch (e) {}
 
             if (!isPremium && currentPinCount >= 20) {
-                const result = await Swal.fire({ title: '📌 保存上限に達しました', html: `無料プランの保存枠（20件）を使い切りました。<br><br><b>TACK Premium</b>へアップグレードしますか？`, ...
+                const result = await Swal.fire({ title: '📌 保存上限に達しました', html: `無料プランの保存枠（20件）を使い切りました。<br><br><b>TACK Premium</b>へアップグレードしますか？`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#06C755', confirmButtonText: '決済画面へ', cancelButtonText: 'やめる' });
                 if (result.isConfirmed) {
                     if (!currentUserId) { Swal.fire({ title: '認証エラー', text: 'LINE IDを取得できませんでした。', icon: 'error' }); return; }
                     showLoading("決済画面へ安全に接続中...");
