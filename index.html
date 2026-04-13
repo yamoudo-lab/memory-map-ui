@@ -531,7 +531,7 @@
         }
 
         async function deleteSingleImage() {
-            const result = await Swal.fire({ title: '写真の切断', text: "この写真1枚だけを削除しますか？", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ff5252', cancelButtonColor: '#06C755', confirmButtonText: '削除する', cancelButtonText: 'やめる' });
+            const result = await Swal.fire({ title: '写真の削除', text: "この写真を削除しますか？", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ff5252', cancelButtonColor: '#06C755', confirmButtonText: '削除する', cancelButtonText: 'やめる' });
             if (!result.isConfirmed) return;
 
             const targetUrl = window.galleryData[currentLbDate][currentLbIndex]; closeLightbox(); 
@@ -554,7 +554,7 @@
                     });
                 }
                 fetch(GAS_URL + "?userId=" + targetUserId).then(res => res.json()).then(freshData => { localStorage.setItem("memoryMapCache_" + targetUserId, JSON.stringify(freshData)); });
-                deletingUrls = deletingUrls.filter(url => url !== targetUrl); Swal.fire({ title: '切断完了', icon: 'success', timer: 1000, showConfirmButton: false });
+                deletingUrls = deletingUrls.filter(url => url !== targetUrl); Swal.fire({ title: '削除完了', icon: 'success', timer: 1000, showConfirmButton: false });
             } catch (error) { 
                 deletingUrls = deletingUrls.filter(url => url !== targetUrl);
                 if (cardElement) cardElement.querySelectorAll('img.thumb-img').forEach(img => { if (img.src === targetUrl) img.classList.remove('deleting'); });
