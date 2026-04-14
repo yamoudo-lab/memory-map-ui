@@ -954,48 +954,82 @@
             try { 
                 await liff.init({ liffId: "2009431992-aQfZHA0X" }); 
                 
+                // ▼ URLからパラメータを取得
                 const urlParams = new URLSearchParams(window.location.search);
                 const uidParam = urlParams.get('uid');
                 const filterParam = urlParams.get('filter');
 
+                // ▼ ログイン状態の確認（LINE内なら最初の門をくぐった時点で必ずtrueになる）
+                const isLoggedIn = liff.isLoggedIn();
+
+                if (!isLoggedIn && !uidParam) {
+                    // 共有モードでもなく、未ログインなら強制ログイン（自分のマップ）
+                    liff.login();
+                    return; 
+                }
+
+                // ▼ ユーザー情報のセット
+                if (isLoggedIn) {
+                    const profile = await liff.getProfile();
+                    currentUserId = profile.userId;
+                }
+
+                // ▼ マップの初期表示位置の演算（キャッシュから前回の位置を復元）
+                let startLat = 35.6895, startLng = 139.6917, startZoom = 5;
+                let targetForCache = uidParam ? uidParam : currentUserId;
+                try {
+                    const cachedDataStr = localStorage.getItem("memoryMapCache_" + targetForCache);
+                    if (cachedDataStr) {
+                        const cachedData = JSON.parse(cachedDataStr);
+                        for (let i = cachedData.length - 1; i > 0; i--) {
+                            if (cachedData[i][4]) {
+                                const coords = String(cachedData[i][4]).split(",");
+                                if(coords.length === 2) {
+                                    startLat = parseFloat(coords[0]); startLng = parseFloat(coords[1]);
+                                    startZoom = 15; 
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch(e) {}
+                
+                // ▼ マップを実体化（ここで地図を描画）
+                if (typeof google !== 'undefined' && typeof google.maps !== 'undefined') { 
+                    initMap(startLat, startLng, startZoom); 
+                } 
+
+                // ▼ モード分岐（共有 or 自分）
                 if (uidParam && filterParam) {
-                    // 🔵 共有モード：ログイン不要で閲覧を許可
+                    // 🔵 共有モード
                     targetUserId = uidParam;
                     filterIds = filterParam.split(',');
                     isSharedMode = true; 
                     
                     document.querySelector('.fab-container').style.display = 'none';
                     const modeBtn = document.getElementById('settings-btn');
-                    modeBtn.innerHTML = `<span class="material-symbols-outlined">home</span> 自分のマップへ`;
+                    modeBtn.innerHTML = `<span class="material-symbols-outlined">home</span>自分のマップへ`;
                     modeBtn.style.backgroundColor = "#06C755";
                     modeBtn.style.color = "white";
                     modeBtn.style.borderColor = "#06C755";
 
-                    // 「自分のマップへ」を押した時に初めてログインを要求する
                     modeBtn.onclick = function() { 
-                        if (!liff.isLoggedIn()) {
-                            liff.login({ redirectUri: "https://liff.line.me/2009431992-aQfZHA0X" });
-                        } else {
-                            window.location.href = "https://liff.line.me/2009431992-aQfZHA0X";
-                        }
+                        // 一番最初の「許可」で友だち追加も終わっているので、直結させる
+                        window.location.href = "https://liff.line.me/2009431992-aQfZHA0X"; 
                     };
-                    
-                    // 地図の初期位置設定（共有データから取得）
-                    let startLat = 35.6895, startLng = 139.6917, startZoom = 5;
-                    await fetchData(); // ログインなしでデータを取得
                 } else {
-                    // 🟢 通常モード（自分のマップ）：ログイン必須
-                    if (!liff.isLoggedIn()) {
-                        liff.login();
-                    } else {
-                        const profile = await liff.getProfile();
-                        currentUserId = profile.userId;
-                        targetUserId = currentUserId;
-                        await checkPremiumStatus(currentUserId);
-                        await fetchData();
-                    }
+                    // 🟢 通常モード（自分のマップ）
+                    targetUserId = currentUserId;
+                    await checkPremiumStatus(currentUserId);
                 } 
-            } catch (e) { /* エラー処理 */ } 
+
+                // ▼ データの取得とピンの描画
+                await fetchData(); 
+
+            } catch (e) { 
+                Swal.fire({ title: '起動エラー', text: "エラー発生: " + e.message, icon: 'error', confirmButtonColor: '#06C755' }); 
+                hideLoading(); 
+            } 
         }
         main();
     </script>
