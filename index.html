@@ -335,6 +335,19 @@
             let newInput = oldInput.cloneNode(true); newInput.value = ''; 
             if (id === 'append-photo-trigger') { newInput.onchange = handleAppendPhotos; } 
             else { newInput.onchange = handleDirectFiles; }
+
+            // 📌 Phase Shift: OSによって配管の接続先を動的に切り替える
+            let os = "web";
+            try { os = liff.getOS(); } catch(e) {}
+            
+            if (os === "android") {
+                // Androidの場合：これを付けないと「ファイル」に直行してしまう
+                newInput.setAttribute("capture", "environment"); 
+            } else {
+                // iOSの場合：これを付けると「カメラ」に強制直行するので外す
+                newInput.removeAttribute("capture"); 
+            }
+
             oldInput.parentNode.replaceChild(newInput, oldInput); newInput.click(); 
         }
 
