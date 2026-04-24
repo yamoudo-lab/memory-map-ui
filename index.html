@@ -668,25 +668,106 @@
         }
 
         async function executeMerge(targetDate) {
-            const btn = document.querySelector('#input-modal .btn-submit'); btn.innerText = "Merging..."; btn.disabled = true; 
+            const btn = document.querySelector('#input-modal .btn-submit'); 
+            btn.innerText = "Merging..."; btn.disabled = true; 
+
+            // 📌 Phase Shift: モーダルを閉じる前に、入力された値と写真を「退避」させる
+            const memoText = document.getElementById('memo-input').value;
+            const filesToUpload = [...stagingFiles]; 
+
+            // 📌 即時仮反映（Optimistic UI）: 対象のカードを緑色に光らせる
+            const timeId = new Date(targetDate).getTime();
+            const cardElement = document.getElementById('card-' + timeId);
+
+            if (cardElement) {
+                // 緑の破線と背景色で「追記中」を演出
+                cardElement.style.border = "2px dashed #06C755";
+                cardElement.style.backgroundColor = "#f0fdf4";
+                cardElement.style.opacity = "0.9";
+                cardElement.style.pointerEvents = "none";
+
+                const dateEl = cardElement.querySelector('.memory-date');
+                if (dateEl) dateEl.innerHTML = `<span style="color:#06C755;">⏳ ただいま追記中...</span>`;
+
+                // 画像のプレビューを仮追加
+                if (filesToUpload.length > 0) {
+                    let imgContainer = cardElement.querySelector('div[style*="overflow-x: auto"]');
+                    if (!imgContainer) {
+                        imgContainer = document.createElement('div');
+                        imgContainer.style.cssText = "display: flex; overflow-x: auto; gap: 6px; margin-bottom: 15px; padding-bottom: 5px;";
+                        cardElement.insertBefore(imgContainer, cardElement.querySelector('.btn-container'));
+                    }
+                    filesToUpload.forEach(file => {
+                        const tempImg = document.createElement('img');
+                        tempImg.className = 'thumb-img';
+                        tempImg.style.border = "2px dashed #06C755";
+                        tempImg.src = URL.createObjectURL(file);
+                        imgContainer.appendChild(tempImg);
+                    });
+                }
+
+                // メモテキストの仮追加
+                if (memoText) {
+                    let textEl = cardElement.querySelector('.memory-text');
+                    if (textEl) {
+                        const separator = textEl.innerHTML ? "<br><br>" : "";
+                        textEl.innerHTML += separator + autoLink(memoText);
+                    } else {
+                        const btnContainer = cardElement.querySelector('.btn-container');
+                        const newTextDiv = document.createElement('div');
+                        newTextDiv.className = 'memory-text';
+                        newTextDiv.innerHTML = autoLink(memoText);
+                        cardElement.insertBefore(newTextDiv, btnContainer);
+                    }
+                }
+                
+                // カードの位置まで自動スクロールして見せる
+                cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // 📌 画面を止めるのをやめ、最速でモーダルを閉じる
+            closeModal(); 
+
             try {
                 let uploadedUrls = [];
-                if (stagingFiles.length > 0) {
-                    const uploadPromises = stagingFiles.map(async (file, i) => {
-                        let blob = await compressImageToBlob(file, 1024, 1024, 0.75); let filename = `append_${Date.now()}_${i}.jpg`; let storageRef = storage.ref(`images/${currentUserId}/${filename}`); await storageRef.put(blob); return await storageRef.getDownloadURL();
-                    }); uploadedUrls = await Promise.all(uploadPromises);
+                if (filesToUpload.length > 0) {
+                    const uploadPromises = filesToUpload.map(async (file, i) => {
+                        let blob = await compressImageToBlob(file, 1024, 1024, 0.75); 
+                        let filename = `append_${Date.now()}_${i}.jpg`; 
+                        let storageRef = storage.ref(`images/${currentUserId}/${filename}`); 
+                        await storageRef.put(blob); 
+                        return await storageRef.getDownloadURL();
+                    }); 
+                    uploadedUrls = await Promise.all(uploadPromises);
                 }
-                if (uploadedUrls.length > 0) await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ userId: targetUserId, action: "appendImage", date: targetDate, images: uploadedUrls }) });
+                if (uploadedUrls.length > 0) {
+                    await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ userId: targetUserId, action: "appendImage", date: targetDate, images: uploadedUrls }) });
+                }
 
-                const memoText = document.getElementById('memo-input').value;
                 if (memoText) {
-                    const oldMemo = window.memoData[targetDate] || ""; const newMemo = oldMemo ? oldMemo + "\n\n" + memoText : memoText;
+                    const oldMemo = window.memoData[targetDate] || ""; 
+                    const newMemo = oldMemo ? oldMemo + "\n\n" + memoText : memoText;
                     await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ userId: targetUserId, action: "update", date: targetDate, newMemo: newMemo }) }); // レイヤーはそのまま
                 }
-                closeModal(); Swal.fire({ title: '追加完了', text: '既存のメモに追記しました。', icon: 'success', timer: 2000, showConfirmButton: false });
-            } catch (error) { Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' }); } finally { btn.innerText = "送信する"; btn.disabled = false; }
-        }
+                
+                Swal.fire({ title: '追記完了', text: '既存のメモに反映しました。', icon: 'success', timer: 2000, showConfirmButton: false });
 
+                // 最新データを取得して再描画（ここで緑枠が外れて正式なカードに戻る）
+                fetch(GAS_URL + "?userId=" + targetUserId)
+                    .then(res => res.json())
+                    .then(freshData => { 
+                        localStorage.setItem("memoryMapCache_" + targetUserId, JSON.stringify(freshData)); 
+                        renderData(freshData); 
+                    });
+
+            } catch (error) { 
+                Swal.fire({ title: 'エラー', text: error, icon: 'error', confirmButtonColor: '#06C755' }); 
+            } finally { 
+                if(document.querySelector('#input-modal')) {
+                    btn.innerText = "送信する"; btn.disabled = false; 
+                }
+            }
+        }
         async function submitData() {
             if (modalMap) { currentLat = modalMap.getCenter().lat(); currentLng = modalMap.getCenter().lng(); }
             if (!currentLat || !currentLng) { Swal.fire({ title: '注意', text: '場所が決定されていません。', icon: 'warning', confirmButtonColor: '#06C755' }); return; }
