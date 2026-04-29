@@ -476,25 +476,47 @@
             } catch (error) { Swal.fire({ title: 'エラー', text: '写真の追加に失敗しました。', icon: 'error', confirmButtonColor: '#06C755' }); }
         }
 
-        function openEditModal(dateStr, lat, lng) { 
-            currentEditDate = dateStr; 
-            document.getElementById('edit-memo-input').value = window.memoData[dateStr] || ""; 
-            let savedLayer = window.layerData[dateStr] || "red";
-            if(savedLayer === "default" || savedLayer === "") savedLayer = "red";
-            selectLayer('edit', savedLayer);
+        // 🗺 変数の追加（JSの最初の方に、editModalMapと一緒に定義しておく）
+let editModalMarkers = []; 
 
-            // 🗺 地図の初期化と再配置
-            let pos = { lat: lat ? parseFloat(lat) : currentLat || 35.681236, lng: lng ? parseFloat(lng) : currentLng || 139.767125 };
-            if (!editModalMap) {
-                editModalMap = new google.maps.Map(document.getElementById("edit-modal-map"), {
-                    center: pos, zoom: 18, mapTypeControl: false, streetViewControl: false, fullscreenControl: false, gestureHandling: "greedy"
-                });
-            } else {
-                editModalMap.setCenter(pos);
-            }
+// ==========================================
 
-            document.getElementById('edit-modal').style.display = 'flex'; 
-        }
+function openEditModal(dateStr, lat, lng) { 
+    currentEditDate = dateStr; 
+    document.getElementById('edit-memo-input').value = window.memoData[dateStr] || ""; 
+    let savedLayer = window.layerData[dateStr] || "red";
+    if(savedLayer === "default" || savedLayer === "") savedLayer = "red";
+    selectLayer('edit', savedLayer);
+
+    // 🗺 地図の初期化と再配置
+    let pos = { lat: lat ? parseFloat(lat) : currentLat || 35.681236, lng: lng ? parseFloat(lng) : currentLng || 139.767125 };
+    if (!editModalMap) {
+        editModalMap = new google.maps.Map(document.getElementById("edit-modal-map"), {
+            center: pos, zoom: 18, mapTypeControl: false, streetViewControl: false, fullscreenControl: false, gestureHandling: "greedy"
+        });
+    } else {
+        editModalMap.setCenter(pos);
+    }
+
+    // 👻 【ここを追加！】過去のピンを「グレーの小円（ゴースト）」として描画する
+    if (window.editModalMarkers) window.editModalMarkers.forEach(m => m.setMap(null));
+    window.editModalMarkers = [];
+    if (typeof markers !== 'undefined') {
+        markers.forEach(mainMarker => {
+            const mm = new google.maps.Marker({ 
+                position: mainMarker.getPosition(), 
+                map: editModalMap, 
+                // 主張しすぎない、グレーの透けた点で過去のピンを表現
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 5, fillColor:"#666666", fillOpacity: 0.7, strokeWeight: 1.5, strokeColor:"#FFFFFF" },
+                clickable: false 
+            });
+            window.editModalMarkers.push(mm);
+        });
+    }
+
+    document.getElementById('edit-modal').style.display = 'flex'; 
+}
+        
         function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; }
         
         // ★ Phase 2.5: 即時更新（オレンジ）UIへの完全な差し替え
