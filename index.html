@@ -243,14 +243,18 @@
 
     <div id="edit-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="margin: 0; color: #333; text-align: center; font-size:1.1rem;">メモとレイヤーを編集</h3>
+            <h3 style="margin: 0; color: #333; text-align: center; font-size:1.1rem;">メモと位置を修正</h3>
             <div class="color-selector" id="edit-colors">
                 <div class="color-ball red" onclick="selectLayer('edit', 'red')"></div>
                 <div class="color-ball green" onclick="selectLayer('edit', 'green')"></div>
                 <div class="color-ball blue" onclick="selectLayer('edit', 'blue')"></div>
                 <div class="color-ball mono" onclick="selectLayer('edit', 'mono')"></div>
             </div>
-            <textarea id="edit-memo-input" style="height: 120px;" placeholder="メモを書き直す..."></textarea>
+            <div id="edit-modal-map-container" style="position: relative; width: 100%; height: 180px; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; flex-shrink: 0;">
+                <div id="edit-modal-map" style="width: 100%; height: 100%;"></div>
+                <div class="center-pin"><span class="material-symbols-outlined" style="font-size: 36px; color: #FFA000;">location_on</span></div>
+            </div>
+            <textarea id="edit-memo-input" style="height: 100px;" placeholder="メモを書き直す..."></textarea>
             <button class="action-btn btn-submit" onclick="submitEdit()">上書き保存</button><button class="action-btn btn-cancel" onclick="closeEditModal()">キャンセル</button>
         </div>
     </div>
