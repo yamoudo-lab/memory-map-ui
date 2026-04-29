@@ -532,7 +532,11 @@
 
             try {
                 // Payloadに新しいテキストとレイヤー情報をセット
-                const payload = { userId: targetUserId, action: "update", date: currentEditDate, newMemo: newMemoText, layer: targetLayer };
+                let newGpsText = "";
+                if (editModalMap) {
+                    newGpsText = `${editModalMap.getCenter().lat()},${editModalMap.getCenter().lng()}`;
+                }
+                const payload = { userId: targetUserId, action: "update", date: currentEditDate, newMemo: newMemoText, layer: targetLayer, gps: newGpsText };
                 
                 // 画面を止めずに裏側でGASへ送信
                 fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
